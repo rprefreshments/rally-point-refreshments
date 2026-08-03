@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#071a33">
   <meta name="description" content="Handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="images/bottles.jpg">
+  <link rel="apple-touch-icon" href="bottles.jpg">
   <link rel="stylesheet" href="style.css">
   <title>Rally Point Refreshments</title>
 </head>
@@ -23,7 +23,7 @@
 
   <main id="top">
     <section class="hero">
-      <img src="images/bottles.jpg" alt="Rally Point bottled lattes">
+      <img src="bottles.jpg" alt="Rally Point bottled lattes">
       <div class="hero-shade"></div>
       <div class="hero-copy">
         <p class="eyebrow">Veteran owned • Henderson, NC</p>
@@ -56,15 +56,34 @@
       </div>
       <div class="pack-grid">
         <div class="pack-card" data-pack-size="3" data-price="17">
-          <div class="pack-title"><div><h3>3-Pack</h3><p>Any three bottles</p></div><strong>$17</strong></div>
-          <div class="pack-progress"><span>Selected</span><b class="pack-count">0 / 3</b></div>
+          <div class="pack-title">
+            <div>
+              <h3>3-Pack</h3>
+              <p>Any three bottles</p>
+            </div>
+            <strong>$17</strong>
+          </div>
+          <div class="pack-progress">
+            <span>Selected</span>
+            <b class="pack-count">0 / 3</b>
+          </div>
           <div class="pack-options"></div>
           <button class="pack-add" disabled>Add 3-Pack</button>
         </div>
+
         <div class="pack-card featured" data-pack-size="6" data-price="30">
           <div class="badge">Best value</div>
-          <div class="pack-title"><div><h3>6-Pack</h3><p>Any six bottles</p></div><strong>$30</strong></div>
-          <div class="pack-progress"><span>Selected</span><b class="pack-count">0 / 6</b></div>
+          <div class="pack-title">
+            <div>
+              <h3>6-Pack</h3>
+              <p>Any six bottles</p>
+            </div>
+            <strong>$30</strong>
+          </div>
+          <div class="pack-progress">
+            <span>Selected</span>
+            <b class="pack-count">0 / 6</b>
+          </div>
           <div class="pack-options"></div>
           <button class="pack-add" disabled>Add 6-Pack</button>
         </div>
@@ -72,12 +91,15 @@
     </section>
 
     <section class="section story">
-      <img src="images/brand-card.jpg" alt="Rally Point Refreshments branding">
+      <img src="brand-card.jpg" alt="Rally Point Refreshments branding">
       <div>
         <p class="eyebrow dark">Built with purpose</p>
         <h2>Local coffee, ready when you are.</h2>
         <p>Rally Point Refreshments is a veteran-owned family business focused on fresh bottled lattes with bold, familiar flavors.</p>
-        <p class="contact">Orders: (252) 226-0557<br>rprefreshment@gmail.com</p>
+        <p class="contact">
+          Orders: (252) 226-0557<br>
+          rprefreshment@gmail.com
+        </p>
       </div>
     </section>
   </main>
@@ -90,24 +112,61 @@
 
   <div class="overlay" id="overlay" aria-hidden="true">
     <section class="drawer" aria-label="Your order">
-      <div class="drawer-head"><div><p class="eyebrow dark">Checkout</p><h2>Your order</h2></div><button id="closeCart">×</button></div>
-      <div id="cartItems"></div>
-      <div class="total-row"><span>Subtotal</span><strong id="subtotal">$0</strong></div>
-      <div class="checkout">
-        <label>Name<input id="name" autocomplete="name" placeholder="Your name"></label>
-        <label>Phone<input id="phone" type="tel" autocomplete="tel" placeholder="Your phone number"></label>
-        <div class="two-col">
-          <label>Pickup date<input id="date" type="date"></label>
-          <label>Pickup time<input id="time" type="time"></label>
+      <div class="drawer-head">
+        <div>
+          <p class="eyebrow dark">Checkout</p>
+          <h2>Your order</h2>
         </div>
-        <label>Notes<textarea id="notes" placeholder="Allergies or special requests"></textarea></label>
+        <button id="closeCart">×</button>
+      </div>
+
+      <div id="cartItems"></div>
+
+      <div class="total-row">
+        <span>Subtotal</span>
+        <strong id="subtotal">$0</strong>
+      </div>
+
+      <div class="checkout">
+        <label>
+          Name
+          <input id="name" autocomplete="name" placeholder="Your name">
+        </label>
+
+        <label>
+          Phone
+          <input id="phone" type="tel" autocomplete="tel" placeholder="Your phone number">
+        </label>
+
+        <div class="two-col">
+          <label>
+            Pickup date
+            <input id="date" type="date">
+          </label>
+
+          <label>
+            Pickup time
+            <input id="time" type="time">
+          </label>
+        </div>
+
+        <label>
+          Notes
+          <textarea id="notes" placeholder="Allergies or special requests"></textarea>
+        </label>
+
         <button class="primary full" id="textOrder">Text my order</button>
-        <small>Pressing this button opens Messages with the full order filled in. You review it before sending.</small>
+
+        <small>
+          Pressing this button opens Messages with the full order filled in.
+          You review it before sending.
+        </small>
       </div>
     </section>
   </div>
 
   <div class="toast" id="toast"></div>
+
   <script src="app.js"></script>
 </body>
 </html>
