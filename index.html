@@ -3,121 +3,188 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#071a33">
-  <meta name="description" content="Handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
-  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#06182f">
+  <meta name="description" content="Order handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
+  <meta property="og:title" content="Rally Point Refreshments">
+  <meta property="og:description" content="Veteran-owned bottled lattes made fresh weekly.">
+  <meta property="og:image" content="bottles.jpg">
+  <link rel="manifest" href="manifest.json?v=3">
   <link rel="apple-touch-icon" href="bottles.jpg">
-  <link rel="stylesheet" href="style.css">
+  <link rel="preload" as="image" href="bottles.jpg">
+  <link rel="stylesheet" href="style.css?v=3">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
+  <a class="skip-link" href="#menu">Skip to coffee menu</a>
+
   <header class="topbar">
-    <a class="brand" href="#top">
-      <span class="brand-mark">★</span>
-      <span><strong>Rally Point</strong><small>Refreshments</small></span>
+    <a class="brand" href="#top" aria-label="Rally Point Refreshments home">
+      <span class="brand-mark" aria-hidden="true">★</span>
+      <span>
+        <strong>Rally Point</strong>
+        <small>Refreshments</small>
+      </span>
     </a>
-    <button class="cart-pill" id="cartPill" aria-label="Open cart">
-      <span>Cart</span><b id="cartCount">0</b>
+
+    <button class="cart-pill" id="cartPill" type="button" aria-label="Open cart">
+      <span>Cart</span>
+      <b id="cartCount">0</b>
     </button>
   </header>
 
   <main id="top">
     <section class="hero">
-      <img src="bottles.jpg" alt="Rally Point bottled lattes">
+      <img src="bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
       <div class="hero-shade"></div>
+
       <div class="hero-copy">
+        <div class="availability">
+          <span class="status-dot"></span>
+          <span id="pickupBanner">Fresh Saturday pickup</span>
+        </div>
+
         <p class="eyebrow">Veteran owned • Henderson, NC</p>
-        <h1>Small batch.<br>Big flavor.</h1>
-        <p>Handcrafted bottled lattes made fresh each week and ready for Saturday pickup.</p>
-        <a class="primary" href="#menu">Order this week</a>
+        <h1>Fresh coffee.<br>Ready to grab.</h1>
+        <p class="hero-sub">
+          Pick your flavors, text the order, and we will confirm your Saturday pickup.
+        </p>
+
+        <div class="hero-actions">
+          <a class="primary" href="#menu">Order coffee</a>
+          <a class="secondary" href="#packs">Build a 6-pack</a>
+        </div>
+
+        <div class="hero-proof">
+          <span><strong>$6</strong> singles</span>
+          <span><strong>$17</strong> 3-pack</span>
+          <span><strong>$30</strong> 6-pack</span>
+        </div>
       </div>
     </section>
 
-    <section class="proof">
-      <div><strong>7</strong><span>Flavors</span></div>
-      <div><strong>$6</strong><span>Singles</span></div>
-      <div><strong>$30</strong><span>6-Packs</span></div>
+    <section class="deadline-strip" aria-label="Ordering information">
+      <div>
+        <strong id="orderDeadline">Order by Thursday</strong>
+        <span>for Saturday pickup</span>
+      </div>
+      <a href="#menu">Choose flavors →</a>
     </section>
 
-    <section class="section" id="menu">
-      <div class="section-head">
-        <p class="eyebrow dark">The coffee lineup</p>
-        <h2>Pick your favorites.</h2>
-        <p>Order single bottles or build a mix-and-match pack.</p>
+    <section class="section menu-section" id="menu">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow dark">Quick order</p>
+          <h2>Tap to add a bottle.</h2>
+        </div>
+        <p>Best sellers appear first. You can adjust quantities in your cart.</p>
       </div>
+
+      <div class="filter-row" aria-label="Menu shortcuts">
+        <button class="filter active" type="button" data-filter="all">All flavors</button>
+        <button class="filter" type="button" data-filter="best">Best sellers</button>
+        <button class="filter" type="button" data-filter="chocolate">Chocolate</button>
+      </div>
+
       <div class="product-grid" id="productGrid"></div>
     </section>
 
-    <section class="section packs" id="packs">
-      <div class="section-head">
-        <p class="eyebrow dark">Better together</p>
-        <h2>Build your own pack.</h2>
-        <p>Choose any flavor combination, including multiples of the same coffee.</p>
+    <section class="section pack-section" id="packs">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow dark">Save with a pack</p>
+          <h2>Build it in seconds.</h2>
+        </div>
+        <p>Tap plus beside each flavor until your pack is full.</p>
       </div>
+
       <div class="pack-grid">
-        <div class="pack-card" data-pack-size="3" data-price="17">
+        <article class="pack-card" data-pack-size="3" data-price="17">
           <div class="pack-title">
             <div>
+              <p class="pack-label">Try a few</p>
               <h3>3-Pack</h3>
-              <p>Any three bottles</p>
+              <span>Any three bottles</span>
             </div>
             <strong>$17</strong>
           </div>
-          <div class="pack-progress">
-            <span>Selected</span>
-            <b class="pack-count">0 / 3</b>
-          </div>
-          <div class="pack-options"></div>
-          <button class="pack-add" disabled>Add 3-Pack</button>
-        </div>
 
-        <div class="pack-card featured" data-pack-size="6" data-price="30">
-          <div class="badge">Best value</div>
+          <div class="progress-wrap">
+            <div class="progress-copy">
+              <span>Selected</span>
+              <b class="pack-count">0 / 3</b>
+            </div>
+            <div class="progress-track"><span class="progress-bar"></span></div>
+          </div>
+
+          <div class="pack-options"></div>
+          <button class="pack-add" type="button" disabled>Add 3-Pack — $17</button>
+        </article>
+
+        <article class="pack-card featured" data-pack-size="6" data-price="30">
+          <div class="best-value">Best value</div>
+
           <div class="pack-title">
             <div>
+              <p class="pack-label">Stock the fridge</p>
               <h3>6-Pack</h3>
-              <p>Any six bottles</p>
+              <span>Any six bottles</span>
             </div>
             <strong>$30</strong>
           </div>
-          <div class="pack-progress">
-            <span>Selected</span>
-            <b class="pack-count">0 / 6</b>
+
+          <div class="progress-wrap">
+            <div class="progress-copy">
+              <span>Selected</span>
+              <b class="pack-count">0 / 6</b>
+            </div>
+            <div class="progress-track"><span class="progress-bar"></span></div>
           </div>
+
           <div class="pack-options"></div>
-          <button class="pack-add" disabled>Add 6-Pack</button>
-        </div>
+          <button class="pack-add" type="button" disabled>Add 6-Pack — $30</button>
+        </article>
       </div>
     </section>
 
-    <section class="section story">
-      <img src="brand-card.jpg" alt="Rally Point Refreshments branding">
-      <div>
-        <p class="eyebrow dark">Built with purpose</p>
-        <h2>Local coffee, ready when you are.</h2>
-        <p>Rally Point Refreshments is a veteran-owned family business focused on fresh bottled lattes with bold, familiar flavors.</p>
-        <p class="contact">
-          Orders: (252) 226-0557<br>
-          rprefreshment@gmail.com
-        </p>
+    <section class="trust-section">
+      <div class="trust-card">
+        <img src="brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
+        <div>
+          <p class="eyebrow dark">Why Rally Point?</p>
+          <h2>Made locally. Ordered simply.</h2>
+          <p>
+            Rally Point Refreshments is a veteran-owned family business serving fresh bottled lattes in Henderson, North Carolina.
+          </p>
+
+          <div class="trust-points">
+            <span>✓ Fresh weekly</span>
+            <span>✓ Mix-and-match packs</span>
+            <span>✓ Simple text ordering</span>
+          </div>
+        </div>
       </div>
     </section>
   </main>
 
-  <button class="floating-cart" id="floatingCart">
-    <span><b id="floatCount">0</b> bottles</span>
-    <strong id="floatTotal">$0</strong>
-    <span>View order →</span>
+  <button class="floating-cart" id="floatingCart" type="button" aria-label="View order">
+    <span class="float-count"><b id="floatCount">0</b></span>
+    <span class="float-copy">
+      <strong>View order</strong>
+      <small id="floatItems">0 bottles</small>
+    </span>
+    <span class="float-total" id="floatTotal">$0</span>
   </button>
 
   <div class="overlay" id="overlay" aria-hidden="true">
-    <section class="drawer" aria-label="Your order">
+    <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle">
+      <div class="drawer-handle"></div>
+
       <div class="drawer-head">
         <div>
-          <p class="eyebrow dark">Checkout</p>
-          <h2>Your order</h2>
+          <p class="eyebrow dark">Almost done</p>
+          <h2 id="cartTitle">Your order</h2>
         </div>
-        <button id="closeCart">×</button>
+        <button id="closeCart" type="button" aria-label="Close cart">×</button>
       </div>
 
       <div id="cartItems"></div>
@@ -128,45 +195,46 @@
       </div>
 
       <div class="checkout">
-        <label>
-          Name
-          <input id="name" autocomplete="name" placeholder="Your name">
-        </label>
-
-        <label>
-          Phone
-          <input id="phone" type="tel" autocomplete="tel" placeholder="Your phone number">
-        </label>
-
-        <div class="two-col">
-          <label>
-            Pickup date
-            <input id="date" type="date">
-          </label>
-
-          <label>
-            Pickup time
-            <input id="time" type="time">
-          </label>
+        <div class="pickup-box">
+          <strong id="pickupDateText">Saturday pickup</strong>
+          <span>We will confirm the exact pickup details by text.</span>
         </div>
 
         <label>
-          Notes
+          Your name
+          <input id="name" autocomplete="name" placeholder="First and last name">
+        </label>
+
+        <label>
+          Phone number
+          <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(252) 555-1234">
+        </label>
+
+        <label>
+          Preferred pickup window
+          <select id="pickupWindow">
+            <option value="Morning">Morning</option>
+            <option value="Afternoon" selected>Afternoon</option>
+            <option value="Evening">Evening</option>
+          </select>
+        </label>
+
+        <label>
+          Notes <span class="optional">(optional)</span>
           <textarea id="notes" placeholder="Allergies or special requests"></textarea>
         </label>
 
-        <button class="primary full" id="textOrder">Text my order</button>
+        <button class="primary full" id="textOrder" type="button">Text my order</button>
 
-        <small>
-          Pressing this button opens Messages with the full order filled in.
-          You review it before sending.
+        <small class="fine-print">
+          Your iPhone will open Messages with the complete order filled in. Review it, then tap send.
         </small>
       </div>
     </section>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
