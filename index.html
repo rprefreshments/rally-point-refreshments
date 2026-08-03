@@ -7,11 +7,11 @@
   <meta name="description" content="Order handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
   <meta property="og:title" content="Rally Point Refreshments">
   <meta property="og:description" content="Veteran-owned bottled lattes made fresh weekly.">
-  <meta property="og:image" content="bottles.jpg">
-  <link rel="manifest" href="manifest.json?v=3">
-  <link rel="apple-touch-icon" href="bottles.jpg">
-  <link rel="preload" as="image" href="bottles.jpg">
-  <link rel="stylesheet" href="style.css?v=3">
+  <meta property="og:image" content="/bottles.jpg">
+  <link rel="manifest" href="/manifest.json?v=4">
+  <link rel="apple-touch-icon" href="/bottles.jpg">
+  <link rel="preload" as="image" href="/bottles.jpg">
+  <link rel="stylesheet" href="/style.css?v=4">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
@@ -34,7 +34,7 @@
 
   <main id="top">
     <section class="hero">
-      <img src="bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
+      <img src="/bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
       <div class="hero-shade"></div>
 
       <div class="hero-copy">
@@ -46,7 +46,7 @@
         <p class="eyebrow">Veteran owned • Henderson, NC</p>
         <h1>Fresh coffee.<br>Ready to grab.</h1>
         <p class="hero-sub">
-          Pick your flavors, text the order, and we will confirm your Saturday pickup.
+          Pick your flavors, place the order, and receive an instant confirmation number.
         </p>
 
         <div class="hero-actions">
@@ -76,7 +76,7 @@
           <p class="eyebrow dark">Quick order</p>
           <h2>Tap to add a bottle.</h2>
         </div>
-        <p>Best sellers appear first. You can adjust quantities in your cart.</p>
+        <p>Best sellers appear first. Adjust quantities from your cart.</p>
       </div>
 
       <div class="filter-row" aria-label="Menu shortcuts">
@@ -146,9 +146,26 @@
       </div>
     </section>
 
+    <section class="details-section">
+      <div class="details-grid">
+        <article>
+          <strong>Keep refrigerated</strong>
+          <span>Bottled fresh and intended to stay chilled.</span>
+        </article>
+        <article>
+          <strong>Saturday pickup</strong>
+          <span>We confirm the exact pickup details after ordering.</span>
+        </article>
+        <article>
+          <strong>Pay at pickup</strong>
+          <span>No online payment is required to reserve your order.</span>
+        </article>
+      </div>
+    </section>
+
     <section class="trust-section">
       <div class="trust-card">
-        <img src="brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
+        <img src="/brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
         <div>
           <p class="eyebrow dark">Why Rally Point?</p>
           <h2>Made locally. Ordered simply.</h2>
@@ -159,7 +176,7 @@
           <div class="trust-points">
             <span>✓ Fresh weekly</span>
             <span>✓ Mix-and-match packs</span>
-            <span>✓ Simple text ordering</span>
+            <span>✓ Instant order confirmation</span>
           </div>
         </div>
       </div>
@@ -194,7 +211,7 @@
         <strong id="subtotal">$0</strong>
       </div>
 
-      <div class="checkout">
+      <form class="checkout" id="checkoutForm">
         <div class="pickup-box">
           <strong id="pickupDateText">Saturday pickup</strong>
           <span>We will confirm the exact pickup details by text.</span>
@@ -202,17 +219,22 @@
 
         <label>
           Your name
-          <input id="name" autocomplete="name" placeholder="First and last name">
+          <input id="name" name="name" autocomplete="name" maxlength="80" placeholder="First and last name" required>
         </label>
 
         <label>
           Phone number
-          <input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(252) 555-1234">
+          <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="24" placeholder="(252) 555-1234" required>
+        </label>
+
+        <label>
+          Email <span class="optional">(optional receipt)</span>
+          <input id="email" name="email" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com">
         </label>
 
         <label>
           Preferred pickup window
-          <select id="pickupWindow">
+          <select id="pickupWindow" name="pickupWindow">
             <option value="Morning">Morning</option>
             <option value="Afternoon" selected>Afternoon</option>
             <option value="Evening">Evening</option>
@@ -221,20 +243,51 @@
 
         <label>
           Notes <span class="optional">(optional)</span>
-          <textarea id="notes" placeholder="Allergies or special requests"></textarea>
+          <textarea id="notes" name="notes" maxlength="500" placeholder="Allergies or special requests"></textarea>
         </label>
 
-        <button class="primary full" id="textOrder" type="button">Text my order</button>
+        <label class="honeypot" aria-hidden="true">
+          Website
+          <input id="website" name="website" tabindex="-1" autocomplete="off">
+        </label>
+
+        <button class="primary full place-order" id="placeOrder" type="submit">
+          <span>Place order</span>
+          <small>Pay at pickup</small>
+        </button>
+
+        <button class="text-fallback" id="textOrder" type="button">Having trouble? Text the order instead</button>
 
         <small class="fine-print">
-          Your iPhone will open Messages with the complete order filled in. Review it, then tap send.
+          By ordering, you agree that Rally Point Refreshments may contact you about this pickup.
         </small>
+      </form>
+    </section>
+  </div>
+
+  <div class="confirmation-overlay" id="confirmationOverlay" aria-hidden="true">
+    <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle">
+      <div class="confirmation-check">✓</div>
+      <p class="eyebrow dark">Order received</p>
+      <h2 id="confirmationTitle">You’re on the list.</h2>
+      <p>Your confirmation number is:</p>
+      <strong class="confirmation-number" id="confirmationNumber">RP-0000</strong>
+
+      <div class="confirmation-details">
+        <span id="confirmationPickup">Saturday pickup</span>
+        <strong id="confirmationTotal">$0</strong>
       </div>
+
+      <p class="confirmation-copy">
+        We saved your order and will contact you with pickup confirmation.
+      </p>
+
+      <button class="primary full" id="closeConfirmation" type="button">Done</button>
     </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="app.js?v=3"></script>
+  <script src="/app.js?v=4"></script>
 </body>
 </html>

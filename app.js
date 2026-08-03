@@ -1,4 +1,5 @@
 const BUSINESS_PHONE = "12522260557";
+const CART_KEY = "rallyCartV4";
 
 const products = [
   {
@@ -48,7 +49,7 @@ const products = [
   }
 ];
 
-const cart = JSON.parse(localStorage.getItem("rallyCartV3") || "[]");
+const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
 const money = value => `$${Number(value).toFixed(2).replace(".00", "")}`;
 const productGrid = document.getElementById("productGrid");
 
@@ -63,6 +64,13 @@ function getNextSaturday() {
   return next;
 }
 
+function toLocalIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function formatPickupDate(date) {
   return new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -72,6 +80,7 @@ function formatPickupDate(date) {
 }
 
 const pickupDate = getNextSaturday();
+const pickupIso = toLocalIsoDate(pickupDate);
 document.getElementById("pickupBanner").textContent = `Fresh pickup ${formatPickupDate(pickupDate)}`;
 document.getElementById("pickupDateText").textContent = `${formatPickupDate(pickupDate)} pickup`;
 
@@ -212,9 +221,7 @@ document.querySelectorAll(".pack-card").forEach(card => {
 });
 
 function bottleCount() {
-  return cart.reduce((sum, item) => {
-    return sum + (item.type === "single" ? item.qty : item.size);
-  }, 0);
+  return cart.reduce((sum, item) => sum + (item.type === "single" ? item.qty : item.size), 0);
 }
 
 function subtotal() {
@@ -222,7 +229,7 @@ function subtotal() {
 }
 
 function save() {
-  localStorage.setItem("rallyCartV3", JSON.stringify(cart));
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
   renderCart();
 }
 
@@ -302,37 +309,20 @@ function toast(message) {
   clearTimeout(window.rallyToastTimer);
   window.rallyToastTimer = setTimeout(() => {
     toastElement.classList.remove("show");
-  }, 1500);
+  }, 1800);
 }
 
-document.getElementById("textOrder").addEventListener("click", () => {
-  if (!cart.length) {
-    toast("Add coffee before checking out");
-    return;
-  }
-
+function buildTextMessage() {
   const name = document.getElementById("name").value.trim();
   const phone = document.getElementById("phone").value.trim();
   const pickupWindow = document.getElementById("pickupWindow").value;
   const notes = document.getElementById("notes").value.trim();
 
-  if (!name) {
-    toast("Enter your name");
-    document.getElementById("name").focus();
-    return;
-  }
-
-  if (!phone) {
-    toast("Enter your phone number");
-    document.getElementById("phone").focus();
-    return;
-  }
-
   const lines = [
     "☕ RALLY POINT REFRESHMENTS ORDER",
     "",
-    `Name: ${name}`,
-    `Customer phone: ${phone}`,
+    `Name: ${name || "(not entered)"}`,
+    `Customer phone: ${phone || "(not entered)"}`,
     `Pickup: ${formatPickupDate(pickupDate)} — ${pickupWindow}`,
     "",
     "ORDER:"
@@ -349,14 +339,109 @@ document.getElementById("textOrder").addEventListener("click", () => {
 
   lines.push("", `Subtotal: ${money(subtotal())}`);
   if (notes) lines.push(`Notes: ${notes}`);
+  return lines.join("\n");
+}
 
-  const body = encodeURIComponent(lines.join("\n"));
-  window.location.href = `sms:${BUSINESS_PHONE}&body=${body}`;
+document.getElementById("textOrder").addEventListener("click", () => {
+  if (!cart.length) {
+    toast("Add coffee before checking out");
+    return;
+  }
+  window.location.href = `sms:${BUSINESS_PHONE}&body=${encodeURIComponent(buildTextMessage())}`;
+});
+
+const confirmationOverlay = document.getElementById("confirmationOverlay");
+document.getElementById("closeConfirmation").addEventListener("click", () => {
+  confirmationOverlay.classList.remove("open");
+  confirmationOverlay.setAttribute("aria-hidden", "true");
+  document.body.style.overflow = "";
+});
+
+document.getElementById("checkoutForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!cart.length) {
+    toast("Add coffee before checking out");
+    return;
+  }
+
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const pickupWindow = document.getElementById("pickupWindow").value;
+  const notes = document.getElementById("notes").value.trim();
+  const website = document.getElementById("website").value.trim();
+
+  if (name.length < 2) {
+    toast("Enter your name");
+    document.getElementById("name").focus();
+    return;
+  }
+
+  if (phone.replace(/\D/g, "").length < 10) {
+    toast("Enter a valid phone number");
+    document.getElementById("phone").focus();
+    return;
+  }
+
+  const submitButton = document.getElementById("placeOrder");
+  const originalButton = submitButton.innerHTML;
+  submitButton.disabled = true;
+  submitButton.innerHTML = "<span>Saving order…</span><small>Please wait</small>";
+
+  try {
+    const response = await fetch("/api/orders", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        customer: {name, phone, email},
+        pickupDate: pickupIso,
+        pickupWindow,
+        notes,
+        website,
+        items: cart.map(item => ({
+          type: item.type,
+          name: item.name,
+          qty: item.qty,
+          size: item.size,
+          flavors: item.flavors
+        }))
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.error || "We could not save the order.");
+    }
+
+    document.getElementById("confirmationNumber").textContent = result.orderNumber;
+    document.getElementById("confirmationPickup").textContent =
+      `${formatPickupDate(pickupDate)} • ${pickupWindow}`;
+    document.getElementById("confirmationTotal").textContent = money(result.subtotal / 100);
+
+    cart.splice(0, cart.length);
+    localStorage.removeItem(CART_KEY);
+    renderCart();
+    event.target.reset();
+    document.getElementById("pickupWindow").value = "Afternoon";
+    closeCart();
+
+    confirmationOverlay.classList.add("open");
+    confirmationOverlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  } catch (error) {
+    console.error(error);
+    toast(`${error.message} You can use the text option below.`);
+  } finally {
+    submitButton.disabled = false;
+    submitButton.innerHTML = originalButton;
+  }
 });
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js?v=3").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js?v=4").catch(() => {});
   });
 }
 

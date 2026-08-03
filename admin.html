@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#06182f">
+  <link rel="stylesheet" href="/admin.css?v=4">
+  <title>Rally Point Orders</title>
+</head>
+<body>
+  <header>
+    <div>
+      <span class="logo">★</span>
+      <div>
+        <strong>Rally Point Orders</strong>
+        <small>Private order dashboard</small>
+      </div>
+    </div>
+    <button id="refresh" type="button">Refresh</button>
+  </header>
+
+  <main>
+    <section class="stats" id="stats"></section>
+
+    <section class="toolbar">
+      <label>
+        Status
+        <select id="statusFilter">
+          <option value="">All orders</option>
+          <option value="new">New</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="preparing">Preparing</option>
+          <option value="ready">Ready</option>
+          <option value="picked_up">Picked up</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </label>
+      <span id="lastUpdated"></span>
+    </section>
+
+    <section id="orders" class="orders">
+      <div class="loading">Loading orders…</div>
+    </section>
+  </main>
+
+  <template id="orderTemplate">
+    <article class="order-card">
+      <div class="order-head">
+        <div>
+          <strong class="order-number"></strong>
+          <span class="created-at"></span>
+        </div>
+        <select class="status-select" aria-label="Order status">
+          <option value="new">New</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="preparing">Preparing</option>
+          <option value="ready">Ready</option>
+          <option value="picked_up">Picked up</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+
+      <div class="customer-grid">
+        <div><small>Customer</small><strong class="customer-name"></strong></div>
+        <div><small>Phone</small><a class="customer-phone"></a></div>
+        <div><small>Pickup</small><strong class="pickup"></strong></div>
+        <div><small>Total</small><strong class="total"></strong></div>
+      </div>
+
+      <div class="items"></div>
+      <div class="notes-wrap"><small>Notes</small><p class="notes"></p></div>
+
+      <div class="actions">
+        <a class="call-link">Call</a>
+        <a class="text-link">Text</a>
+      </div>
+    </article>
+  </template>
+
+  <script src="/admin.js?v=4"></script>
+</body>
+</html>
