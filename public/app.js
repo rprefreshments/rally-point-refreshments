@@ -554,6 +554,14 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
       `${formatPickupDate(pickupDate)} • Details by text`;
     document.getElementById("confirmationTotal").textContent = money(result.subtotal / 100);
 
+    const payLink = document.getElementById("confirmationPayLink");
+    if (result.squarePaymentLink) {
+      payLink.href = result.squarePaymentLink;
+      payLink.hidden = false;
+    } else {
+      payLink.hidden = true;
+    }
+
     cart.splice(0, cart.length);
     localStorage.removeItem(CART_KEY);
     renderCart();

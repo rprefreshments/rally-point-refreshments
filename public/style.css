@@ -848,6 +848,18 @@ h1{
   color:var(--navy);
 }
 .confirmation-copy{font-size:13px}
+.confirmation-pay{
+  display:block;
+  margin:14px 0 4px;
+  padding:13px 16px;
+  border-radius:14px;
+  border:2px solid var(--navy);
+  color:var(--navy);
+  font-weight:900;
+  text-decoration:none;
+  text-align:center;
+}
+.confirmation-pay:hover{background:var(--navy);color:#fff}
 @media(min-width:720px){
   .details-grid{grid-template-columns:repeat(3,1fr)}
 }

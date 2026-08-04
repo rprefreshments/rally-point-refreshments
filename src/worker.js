@@ -74,12 +74,19 @@ async function ensureDatabase(env) {
         subtotal_cents INTEGER NOT NULL,
         bottle_count INTEGER NOT NULL,
         items_json TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'new'
+        status TEXT NOT NULL DEFAULT 'new',
+        square_payment_link TEXT
       )
     `),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`)
   ]);
+
+  try {
+    await env.DB.prepare(`ALTER TABLE orders ADD COLUMN square_payment_link TEXT`).run();
+  } catch (error) {
+    if (!String(error.message || error).toLowerCase().includes("duplicate column")) throw error;
+  }
 
   schemaReady = true;
 }
@@ -216,6 +223,14 @@ async function createOrder(request, env, ctx) {
 
   if (!inserted) throw new Error("Could not create a unique order number.");
 
+  const squarePaymentLink = await createSquarePaymentLink(env, orderNumber, parsed.subtotal);
+
+  if (squarePaymentLink) {
+    await env.DB.prepare(`UPDATE orders SET square_payment_link = ? WHERE order_number = ?`)
+      .bind(squarePaymentLink, orderNumber)
+      .run();
+  }
+
   if (env.RESEND_API_KEY && env.ORDER_EMAIL && env.EMAIL_FROM) {
     ctx.waitUntil(sendOrderEmails(env, {
       orderNumber,
@@ -228,7 +243,8 @@ async function createOrder(request, env, ctx) {
       notes,
       subtotal: parsed.subtotal,
       bottleCount: parsed.bottleCount,
-      items: parsed.items
+      items: parsed.items,
+      squarePaymentLink
     }));
   }
 
@@ -238,7 +254,8 @@ async function createOrder(request, env, ctx) {
     subtotal: parsed.subtotal,
     bottleCount: parsed.bottleCount,
     pickupDate,
-    pickupWindow
+    pickupWindow,
+    squarePaymentLink
   }, 201);
 }
 
@@ -379,6 +396,44 @@ function constantTimeEqual(a, b) {
   return mismatch === 0;
 }
 
+async function createSquarePaymentLink(env, orderNumber, subtotalCents) {
+  if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return null;
+
+  const base = env.SQUARE_ENVIRONMENT === "sandbox"
+    ? "https://connect.squareupsandbox.com"
+    : "https://connect.squareup.com";
+
+  try {
+    const response = await fetch(`${base}/v2/online-checkout/payment-links`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${env.SQUARE_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+        "Square-Version": "2024-10-17"
+      },
+      body: JSON.stringify({
+        idempotency_key: `${orderNumber}-square`,
+        quick_pay: {
+          name: `Rally Point order ${orderNumber}`,
+          price_money: {amount: subtotalCents, currency: "USD"},
+          location_id: env.SQUARE_LOCATION_ID
+        }
+      })
+    });
+
+    if (!response.ok) {
+      console.error("Square payment link failed", response.status, await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    return data.payment_link?.url || null;
+  } catch (error) {
+    console.error("Square payment link request failed", error);
+    return null;
+  }
+}
+
 async function sendOrderEmails(env, order) {
   const siteUrl = env.PUBLIC_SITE_URL || "https://rallypointrefreshments.com";
   const adminUrl = `${siteUrl.replace(/\/$/, "")}/admin`;
@@ -423,6 +478,7 @@ async function sendOrderEmails(env, order) {
     `Pickup: ${pickupLabel}`,
     `Bottles: ${order.bottleCount}`,
     `Total: ${total}`,
+    order.squarePaymentLink ? `Prepay link sent to customer: ${order.squarePaymentLink}` : "",
     "",
     itemText,
     "",
@@ -452,6 +508,10 @@ async function sendOrderEmails(env, order) {
 
     <p style="margin:18px 0;color:#4b5563"><strong>Notes:</strong> ${escapeHtml(order.notes || "No notes")}</p>
 
+    ${order.squarePaymentLink ? `
+      <p style="margin:0 0 18px;color:#4b5563">Prepay link sent to the customer: <a href="${escapeHtml(order.squarePaymentLink)}">${escapeHtml(order.squarePaymentLink)}</a></p>
+    ` : ""}
+
     <a href="${adminUrl}" style="display:inline-block;padding:13px 18px;border-radius:10px;background:#06182f;color:#ffffff;font-weight:800;text-decoration:none">
       Open order dashboard
     </a>
@@ -475,12 +535,13 @@ async function sendOrderEmails(env, order) {
       `Confirmation: ${order.orderNumber}`,
       `Pickup: ${pickupLabel}`,
       `Total due at pickup: ${total}`,
+      order.squarePaymentLink ? `Prefer to pay now instead? ${order.squarePaymentLink}` : "",
       "",
       itemText,
       "",
       "We saved your order and will contact you with the exact pickup details.",
       `Questions? Text us at (252) 226-0557.`
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 
     const customerHtml = emailShell(`
       <p style="margin:0 0 6px;color:#c8212c;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">
@@ -503,6 +564,14 @@ async function sendOrderEmails(env, order) {
         <strong style="color:#06182f">Your order</strong>
         <ul style="margin:10px 0 0;padding-left:20px">${itemHtml}</ul>
       </div>
+
+      ${order.squarePaymentLink ? `
+        <div style="margin-top:20px;text-align:center">
+          <a href="${escapeHtml(order.squarePaymentLink)}" style="display:inline-block;padding:13px 22px;border-radius:10px;border:2px solid #06182f;color:#06182f;font-weight:800;text-decoration:none">
+            Pay now with card
+          </a>
+        </div>
+      ` : ""}
 
       <p style="margin:20px 0 0;color:#4b5563">
         We will contact you with the exact pickup details. Questions?
