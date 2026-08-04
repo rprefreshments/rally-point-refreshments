@@ -24,6 +24,10 @@
 
     <section class="toolbar">
       <label>
+        Search
+        <input type="search" id="searchInput" placeholder="Name, phone, or order #">
+      </label>
+      <label>
         Status
         <select id="statusFilter">
           <option value="">All orders</option>
@@ -35,8 +39,42 @@
           <option value="cancelled">Cancelled</option>
         </select>
       </label>
+      <label>
+        Sort
+        <select id="sortOrder">
+          <option value="new">Newest first</option>
+          <option value="old">Oldest first</option>
+          <option value="total-desc">Highest total</option>
+          <option value="total-asc">Lowest total</option>
+        </select>
+      </label>
+      <label class="auto-refresh-toggle">
+        <input type="checkbox" id="autoRefresh" checked>
+        Auto-refresh
+      </label>
       <span id="lastUpdated"></span>
     </section>
+
+    <section class="summary" id="summary"></section>
+
+    <section class="bulk-bar" id="bulkBar" hidden>
+      <span id="bulkCount">0 selected</span>
+      <select id="bulkStatus">
+        <option value="">Set status…</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="preparing">Preparing</option>
+        <option value="ready">Ready</option>
+        <option value="picked_up">Picked up</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <button id="bulkApply" type="button">Apply</button>
+      <button id="bulkClear" type="button">Clear</button>
+    </section>
+
+    <label class="select-all">
+      <input type="checkbox" id="selectAll">
+      Select all visible
+    </label>
 
     <section id="orders" class="orders">
       <div class="loading">Loading orders…</div>
@@ -46,9 +84,12 @@
   <template id="orderTemplate">
     <article class="order-card">
       <div class="order-head">
-        <div>
-          <strong class="order-number"></strong>
-          <span class="created-at"></span>
+        <div class="order-head-main">
+          <input type="checkbox" class="order-checkbox" aria-label="Select order">
+          <div>
+            <strong class="order-number"></strong>
+            <span class="created-at"></span>
+          </div>
         </div>
         <select class="status-select" aria-label="Order status">
           <option value="new">New</option>
@@ -59,6 +100,8 @@
           <option value="cancelled">Cancelled</option>
         </select>
       </div>
+
+      <a class="payment-badge" target="_blank" rel="noopener"></a>
 
       <div class="customer-grid">
         <div><small>Customer</small><strong class="customer-name"></strong></div>
