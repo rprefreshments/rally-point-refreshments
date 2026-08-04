@@ -1,49 +1,64 @@
 const BUSINESS_PHONE = "12522260557";
-const CART_KEY = "rallyCartV4";
+const CART_KEY = "rallyCartV6";
+const PICKUP_WINDOW = "Details confirmed by text";
 
 const products = [
   {
     name: "Brown Sugar Cinnamon Latte",
-    icon: "🤎",
+    icon: "cinnamon",
+    accent: "#9b4b24",
+    soft: "#f4dfce",
     desc: "Brown sugar sweetness with a cozy cinnamon finish.",
     tags: ["best"],
     badge: "Best seller"
   },
   {
     name: "Gourmet Sea Salt Caramel Latte",
-    icon: "🧡",
+    icon: "caramel",
+    accent: "#d16a13",
+    soft: "#ffead3",
     desc: "Rich caramel balanced with just enough sea salt.",
     tags: ["best"],
     badge: "Best seller"
   },
   {
     name: "Midnight Mocha Latte",
-    icon: "🍫",
+    icon: "mocha",
+    accent: "#6c3525",
+    soft: "#ead8d1",
     desc: "Deep chocolate flavor for a bold, indulgent coffee.",
     tags: ["best", "chocolate"],
     badge: "Popular"
   },
   {
     name: "Double Vanilla Bean Oatmilk Latte",
-    icon: "🤍",
+    icon: "vanilla",
+    accent: "#94712f",
+    soft: "#f5e9c8",
     desc: "Silky oatmilk with a smooth double vanilla finish.",
     tags: []
   },
   {
     name: "Copycat Blondie Latte",
-    icon: "💛",
+    icon: "blondie",
+    accent: "#bc820c",
+    soft: "#fff0ba",
     desc: "Creamy vanilla-caramel flavor inspired by a coffee-shop favorite.",
     tags: []
   },
   {
     name: "Sweet & Salty Hazelnut Latte",
-    icon: "🌰",
+    icon: "hazelnut",
+    accent: "#7f3d21",
+    soft: "#eddbcf",
     desc: "Toasty hazelnut with a balanced sweet-and-salty finish.",
     tags: []
   },
   {
     name: "White Chocolate Mocha Latte",
-    icon: "🥛",
+    icon: "white-chocolate",
+    accent: "#8f6d55",
+    soft: "#f4e9e1",
     desc: "Sweet white chocolate blended into a smooth, creamy latte.",
     tags: ["chocolate"]
   }
@@ -52,6 +67,60 @@ const products = [
 const cart = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
 const money = value => `$${Number(value).toFixed(2).replace(".00", "")}`;
 const productGrid = document.getElementById("productGrid");
+const featuredGrid = document.getElementById("featuredGrid");
+
+function iconSvg(type) {
+  const icons = {
+    cinnamon: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M18 44 43 19c4-4 10 2 6 6L24 50c-4 4-10-2-6-6Z"/>
+        <path d="m22 39 7 7M29 32l7 7M36 25l7 7"/>
+        <path d="M16 19c7-6 18-3 20 5-8-4-15-2-20 5 1-4 1-7 0-10Z"/>
+      </svg>`,
+    caramel: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M32 9c8 12 15 20 15 30a15 15 0 1 1-30 0c0-10 7-18 15-30Z"/>
+        <path d="M24 39c2 6 7 9 13 8"/>
+        <path d="M49 17h7M52.5 13.5v7M8 24h7M11.5 20.5v7"/>
+      </svg>`,
+    mocha: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M15 21h34v22c0 7-6 12-13 12h-8c-7 0-13-5-13-12V21Z"/>
+        <path d="M49 27h4c6 0 6 13 0 13h-4"/>
+        <path d="M23 13c0 4 4 4 4 8M34 10c0 5 5 5 5 10"/>
+        <path d="M23 36c6-5 12-5 18 0-6 5-12 5-18 0Z"/>
+      </svg>`,
+    vanilla: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M31 31c-8-2-13-8-11-14 7-1 13 4 14 12"/>
+        <path d="M33 31c2-8 8-13 14-11 1 7-4 13-12 14"/>
+        <path d="M32 34c8 2 13 8 11 14-7 1-13-4-14-12"/>
+        <path d="M30 33c-2 8-8 13-14 11-1-7 4-13 12-14"/>
+        <circle cx="32" cy="32" r="4"/>
+        <path d="M48 48 56 56M44 52l8 8"/>
+      </svg>`,
+    blondie: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="m32 8 5.5 13.5L51 27l-13.5 5.5L32 46l-5.5-13.5L13 27l13.5-5.5L32 8Z"/>
+        <path d="m49 42 2.5 6.5L58 51l-6.5 2.5L49 60l-2.5-6.5L40 51l6.5-2.5L49 42Z"/>
+        <path d="m14 38 2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z"/>
+      </svg>`,
+    hazelnut: `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M20 24c7-8 17-8 24 0 6 7 5 19-3 27-5 5-13 5-18 0-8-8-9-20-3-27Z"/>
+        <path d="M20 24c2-8 8-13 16-13 2 7-1 13-8 17"/>
+        <path d="M24 29c5 3 11 3 16 0"/>
+      </svg>`,
+    "white-chocolate": `
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d="M13 17h38v34H13z"/>
+        <path d="M25.7 17v34M38.3 17v34M13 28.3h38M13 39.7h38"/>
+        <path d="M44 9c5 4 7 8 7 12"/>
+      </svg>`
+  };
+
+  return icons[type] || icons.mocha;
+}
 
 function getNextSaturday() {
   const now = new Date();
@@ -84,48 +153,67 @@ const pickupIso = toLocalIsoDate(pickupDate);
 document.getElementById("pickupBanner").textContent = `Fresh pickup ${formatPickupDate(pickupDate)}`;
 document.getElementById("pickupDateText").textContent = `${formatPickupDate(pickupDate)} pickup`;
 
-productGrid.innerHTML = products.map((product, index) => `
-  <article class="product-card" data-index="${index}" data-tags="${product.tags.join(" ")}">
-    <div class="product-icon" aria-hidden="true">${product.icon}</div>
+function productCard(product, index, featured = false) {
+  return `
+    <article
+      class="${featured ? "favorite-card" : "product-card"}"
+      data-index="${index}"
+      data-tags="${product.tags.join(" ")}"
+      style="--accent:${product.accent};--soft:${product.soft}"
+    >
+      ${featured ? '<span class="favorite-rank">Customer favorite</span>' : ""}
+      <div class="product-icon" aria-hidden="true">${iconSvg(product.icon)}</div>
 
-    <div class="product-copy">
-      ${product.badge ? `<div class="product-meta"><span class="product-badge">${product.badge}</span></div>` : ""}
-      <h3>${product.name}</h3>
-      <p>${product.desc}</p>
-    </div>
+      <div class="product-copy">
+        ${product.badge ? `<div class="product-meta"><span class="product-badge">${product.badge}</span></div>` : ""}
+        <h3>${product.name}</h3>
+        <p>${product.desc}</p>
+      </div>
 
-    <button class="quick-add" type="button" aria-label="Add ${product.name}">
-      <span>+ Add</span>
-      <small>$6</small>
-    </button>
-  </article>
-`).join("");
+      <button class="quick-add" type="button" data-product-index="${index}" aria-label="Add ${product.name}">
+        <span>+ Add</span>
+        <small>$6</small>
+      </button>
+    </article>
+  `;
+}
 
-document.querySelectorAll(".quick-add").forEach(button => {
-  button.addEventListener("click", () => {
-    const card = button.closest(".product-card");
-    const product = products[Number(card.dataset.index)];
-    const existing = cart.find(item => item.type === "single" && item.name === product.name);
+featuredGrid.innerHTML = products
+  .map((product, index) => ({product, index}))
+  .filter(({product}) => product.tags.includes("best"))
+  .slice(0, 3)
+  .map(({product, index}) => productCard(product, index, true))
+  .join("");
 
-    if (existing) {
-      existing.qty += 1;
-      existing.price += 6;
-    } else {
-      cart.push({
-        type: "single",
-        name: product.name,
-        qty: 1,
-        price: 6
-      });
-    }
+productGrid.innerHTML = products.map((product, index) => productCard(product, index)).join("");
 
-    save();
-    toast(`${product.name} added`);
-    button.innerHTML = "<span>Added ✓</span><small>$6</small>";
-    setTimeout(() => {
-      button.innerHTML = "<span>+ Add</span><small>$6</small>";
-    }, 900);
-  });
+document.addEventListener("click", event => {
+  const button = event.target.closest(".quick-add");
+  if (!button) return;
+
+  const product = products[Number(button.dataset.productIndex)];
+  const existing = cart.find(item => item.type === "single" && item.name === product.name);
+
+  if (existing) {
+    existing.qty += 1;
+    existing.price += 6;
+  } else {
+    cart.push({
+      type: "single",
+      name: product.name,
+      qty: 1,
+      price: 6
+    });
+  }
+
+  save();
+  toast(`${product.name} added`);
+
+  const original = button.innerHTML;
+  button.innerHTML = "<span>Added ✓</span><small>$6</small>";
+  setTimeout(() => {
+    button.innerHTML = original;
+  }, 900);
 });
 
 document.querySelectorAll(".filter").forEach(button => {
@@ -258,7 +346,7 @@ function renderCart() {
   const cartItems = document.getElementById("cartItems");
 
   if (!cart.length) {
-    cartItems.innerHTML = '<div class="empty">Your order is empty. Add a coffee to get started.</div>';
+    cartItems.innerHTML = '<div class="empty">Your order is empty. Build a 6-pack or add a bottle to get started.</div>';
     return;
   }
 
@@ -315,7 +403,6 @@ function toast(message) {
 function buildTextMessage() {
   const name = document.getElementById("name").value.trim();
   const phone = document.getElementById("phone").value.trim();
-  const pickupWindow = document.getElementById("pickupWindow").value;
   const notes = document.getElementById("notes").value.trim();
 
   const lines = [
@@ -323,7 +410,7 @@ function buildTextMessage() {
     "",
     `Name: ${name || "(not entered)"}`,
     `Customer phone: ${phone || "(not entered)"}`,
-    `Pickup: ${formatPickupDate(pickupDate)} — ${pickupWindow}`,
+    `Pickup: ${formatPickupDate(pickupDate)} — details confirmed by text`,
     "",
     "ORDER:"
   ];
@@ -368,7 +455,6 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
   const name = document.getElementById("name").value.trim();
   const phone = document.getElementById("phone").value.trim();
   const email = document.getElementById("email").value.trim();
-  const pickupWindow = document.getElementById("pickupWindow").value;
   const notes = document.getElementById("notes").value.trim();
   const website = document.getElementById("website").value.trim();
 
@@ -396,7 +482,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
       body: JSON.stringify({
         customer: {name, phone, email},
         pickupDate: pickupIso,
-        pickupWindow,
+        pickupWindow: PICKUP_WINDOW,
         notes,
         website,
         items: cart.map(item => ({
@@ -417,14 +503,13 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 
     document.getElementById("confirmationNumber").textContent = result.orderNumber;
     document.getElementById("confirmationPickup").textContent =
-      `${formatPickupDate(pickupDate)} • ${pickupWindow}`;
+      `${formatPickupDate(pickupDate)} • Details by text`;
     document.getElementById("confirmationTotal").textContent = money(result.subtotal / 100);
 
     cart.splice(0, cart.length);
     localStorage.removeItem(CART_KEY);
     renderCart();
     event.target.reset();
-    document.getElementById("pickupWindow").value = "Afternoon";
     closeCart();
 
     confirmationOverlay.classList.add("open");
@@ -441,7 +526,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js?v=4").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js?v=6").catch(() => {});
   });
 }
 

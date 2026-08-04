@@ -8,7 +8,8 @@ const CATALOG = new Map([
   ["White Chocolate Mocha Latte", 600]
 ]);
 
-const ALLOWED_WINDOWS = new Set(["Morning", "Afternoon", "Evening"]);
+const DEFAULT_PICKUP_WINDOW = "Details confirmed by text";
+const ALLOWED_WINDOWS = new Set(["Morning", "Afternoon", "Evening", DEFAULT_PICKUP_WINDOW]);
 const ALLOWED_STATUSES = new Set(["new", "confirmed", "preparing", "ready", "picked_up", "cancelled"]);
 
 export default {
@@ -92,7 +93,7 @@ async function createOrder(request, env, ctx) {
   const customerPhone = clean(customer.phone, 24);
   const customerEmail = clean(customer.email, 120);
   const pickupDate = clean(body.pickupDate, 10);
-  const pickupWindow = clean(body.pickupWindow, 20);
+  const pickupWindow = clean(body.pickupWindow, 40) || DEFAULT_PICKUP_WINDOW;
   const notes = clean(body.notes, 500);
 
   if (customerName.length < 2) return json({ok: false, error: "Please enter your name."}, 400);
@@ -312,10 +313,39 @@ function constantTimeEqual(a, b) {
 }
 
 async function sendOrderEmails(env, order) {
+  const siteUrl = env.PUBLIC_SITE_URL || "https://rallypointrefreshments.com";
+  const adminUrl = `${siteUrl.replace(/\/$/, "")}/admin`;
+  const total = `$${(order.subtotal / 100).toFixed(2)}`;
+  const pickupLabel = order.pickupWindow === DEFAULT_PICKUP_WINDOW
+    ? `${order.pickupDate} — exact details confirmed by text`
+    : `${order.pickupDate} — ${order.pickupWindow}`;
+
   const itemText = order.items.map(item => {
     if (item.type === "single") return `${item.qty}x ${item.name}`;
     return `${item.size}-Pack:\n${item.flavors.map(flavor => `- ${flavor}`).join("\n")}`;
   }).join("\n\n");
+
+  const itemHtml = order.items.map(item => {
+    if (item.type === "single") {
+      return `<li style="margin:0 0 8px"><strong>${item.qty}×</strong> ${escapeHtml(item.name)}</li>`;
+    }
+
+    const flavorCounts = item.flavors.reduce((result, flavor) => {
+      result[flavor] = (result[flavor] || 0) + 1;
+      return result;
+    }, {});
+
+    const flavors = Object.entries(flavorCounts)
+      .map(([name, count]) => `<li>${count}× ${escapeHtml(name)}</li>`)
+      .join("");
+
+    return `
+      <li style="margin:0 0 12px">
+        <strong>Custom ${item.size}-Pack</strong>
+        <ul style="margin:6px 0 0;padding-left:20px">${flavors}</ul>
+      </li>
+    `;
+  }).join("");
 
   const businessText = [
     `New Rally Point order ${order.orderNumber}`,
@@ -323,20 +353,50 @@ async function sendOrderEmails(env, order) {
     `Customer: ${order.customerName}`,
     `Phone: ${order.customerPhone}`,
     order.customerEmail ? `Email: ${order.customerEmail}` : "",
-    `Pickup: ${order.pickupDate} — ${order.pickupWindow}`,
+    `Pickup: ${pickupLabel}`,
     `Bottles: ${order.bottleCount}`,
-    `Total: $${(order.subtotal / 100).toFixed(2)}`,
+    `Total: ${total}`,
     "",
     itemText,
     "",
-    order.notes ? `Notes: ${order.notes}` : "No notes"
+    order.notes ? `Notes: ${order.notes}` : "No notes",
+    "",
+    `Manage order: ${adminUrl}`
   ].filter(Boolean).join("\n");
+
+  const businessHtml = emailShell(`
+    <p style="margin:0 0 6px;color:#c8212c;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">
+      New order
+    </p>
+    <h1 style="margin:0 0 20px;color:#06182f;font-size:28px">${escapeHtml(order.orderNumber)}</h1>
+
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px">
+      <tr><td style="padding:7px 0;color:#6b7280">Customer</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(order.customerName)}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Phone</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(order.customerPhone)}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Pickup</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(pickupLabel)}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Bottles</td><td style="padding:7px 0;text-align:right;font-weight:700">${order.bottleCount}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Total</td><td style="padding:7px 0;text-align:right;font-size:20px;font-weight:800">${total}</td></tr>
+    </table>
+
+    <div style="padding:16px;border-radius:12px;background:#f5ecdd">
+      <strong style="color:#06182f">Order</strong>
+      <ul style="margin:10px 0 0;padding-left:20px">${itemHtml}</ul>
+    </div>
+
+    <p style="margin:18px 0;color:#4b5563"><strong>Notes:</strong> ${escapeHtml(order.notes || "No notes")}</p>
+
+    <a href="${adminUrl}" style="display:inline-block;padding:13px 18px;border-radius:10px;background:#06182f;color:#ffffff;font-weight:800;text-decoration:none">
+      Open order dashboard
+    </a>
+  `);
 
   const sends = [
     resend(env, {
       to: [env.ORDER_EMAIL],
-      subject: `New order ${order.orderNumber} — $${(order.subtotal / 100).toFixed(2)}`,
+      subject: `New order ${order.orderNumber} — ${total}`,
       text: businessText,
+      html: businessHtml,
+      replyTo: order.customerEmail || undefined,
       idempotencyKey: `${order.orderNumber}-business`
     })
   ];
@@ -346,18 +406,49 @@ async function sendOrderEmails(env, order) {
       `Thanks for ordering from Rally Point Refreshments.`,
       "",
       `Confirmation: ${order.orderNumber}`,
-      `Pickup: ${order.pickupDate} — ${order.pickupWindow}`,
-      `Total due at pickup: $${(order.subtotal / 100).toFixed(2)}`,
+      `Pickup: ${pickupLabel}`,
+      `Total due at pickup: ${total}`,
       "",
       itemText,
       "",
-      "We will contact you with the exact pickup details."
+      "We saved your order and will contact you with the exact pickup details.",
+      `Questions? Text us at (252) 226-0557.`
     ].join("\n");
+
+    const customerHtml = emailShell(`
+      <p style="margin:0 0 6px;color:#c8212c;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">
+        Order confirmed
+      </p>
+      <h1 style="margin:0 0 10px;color:#06182f;font-size:30px">Thanks, ${escapeHtml(order.customerName)}.</h1>
+      <p style="margin:0 0 20px;color:#4b5563">Your bottled coffee order is saved.</p>
+
+      <div style="margin-bottom:18px;padding:18px;border-radius:14px;background:#f5ecdd;text-align:center">
+        <span style="display:block;color:#6b7280;font-size:12px;text-transform:uppercase">Confirmation number</span>
+        <strong style="display:block;margin-top:4px;color:#c8212c;font-size:23px">${escapeHtml(order.orderNumber)}</strong>
+      </div>
+
+      <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px">
+        <tr><td style="padding:7px 0;color:#6b7280">Pickup</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(pickupLabel)}</td></tr>
+        <tr><td style="padding:7px 0;color:#6b7280">Total due at pickup</td><td style="padding:7px 0;text-align:right;font-size:20px;font-weight:800">${total}</td></tr>
+      </table>
+
+      <div style="padding:16px;border:1px solid #e7dac8;border-radius:12px">
+        <strong style="color:#06182f">Your order</strong>
+        <ul style="margin:10px 0 0;padding-left:20px">${itemHtml}</ul>
+      </div>
+
+      <p style="margin:20px 0 0;color:#4b5563">
+        We will contact you with the exact pickup details. Questions?
+        <a href="sms:+12522260557" style="color:#c8212c;font-weight:800">Text (252) 226-0557</a>.
+      </p>
+    `);
 
     sends.push(resend(env, {
       to: [order.customerEmail],
       subject: `Rally Point order confirmation ${order.orderNumber}`,
       text: customerText,
+      html: customerHtml,
+      replyTo: env.ORDER_EMAIL,
       idempotencyKey: `${order.orderNumber}-customer`
     }));
   }
@@ -365,7 +456,34 @@ async function sendOrderEmails(env, order) {
   await Promise.allSettled(sends);
 }
 
-async function resend(env, {to, subject, text, idempotencyKey}) {
+function emailShell(content) {
+  return `<!doctype html>
+  <html>
+    <body style="margin:0;padding:0;background:#f5efe6;font-family:Arial,Helvetica,sans-serif;color:#172033">
+      <div style="padding:24px 12px">
+        <div style="max-width:620px;margin:0 auto;overflow:hidden;border:1px solid #e7dac8;border-radius:18px;background:#fffaf2">
+          <div style="padding:18px 22px;background:#06182f;color:#ffffff">
+            <strong style="font-size:19px">Rally Point Refreshments</strong>
+            <span style="display:block;margin-top:3px;color:#dce5ef;font-size:12px">Veteran-owned bottled coffee</span>
+          </div>
+          <div style="padding:24px 22px">${content}</div>
+        </div>
+      </div>
+    </body>
+  </html>`;
+}
+
+async function resend(env, {to, subject, text, html, replyTo, idempotencyKey}) {
+  const payload = {
+    from: env.EMAIL_FROM,
+    to,
+    subject,
+    text,
+    html
+  };
+
+  if (replyTo) payload.reply_to = replyTo;
+
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -373,17 +491,21 @@ async function resend(env, {to, subject, text, idempotencyKey}) {
       "Content-Type": "application/json",
       "Idempotency-Key": idempotencyKey
     },
-    body: JSON.stringify({
-      from: env.EMAIL_FROM,
-      to,
-      subject,
-      text
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
     console.error("Resend email failed", response.status, await response.text());
   }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function makeOrderNumber(createdAt) {

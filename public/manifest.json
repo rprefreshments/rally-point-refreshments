@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#06182f",
   "theme_color": "#06182f",
-  "description": "Order handcrafted bottled lattes from Rally Point Refreshments.",
+  "description": "Build a mix-and-match 6-pack of handcrafted bottled lattes from Rally Point Refreshments.",
   "icons": [
     {
       "src": "/bottles.jpg",

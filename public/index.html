@@ -3,33 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#06182f">
+  <meta name="theme-color" content="#03152d">
   <meta name="description" content="Order handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
   <meta property="og:title" content="Rally Point Refreshments">
-  <meta property="og:description" content="Veteran-owned bottled lattes made fresh weekly.">
+  <meta property="og:description" content="Build a mix-and-match 6-pack of veteran-owned bottled coffee for Saturday pickup.">
   <meta property="og:image" content="/bottles.jpg">
-  <link rel="manifest" href="/manifest.json?v=4">
+  <link rel="manifest" href="/manifest.json?v=6">
   <link rel="apple-touch-icon" href="/bottles.jpg">
   <link rel="preload" as="image" href="/bottles.jpg">
-  <link rel="stylesheet" href="/style.css?v=4">
+  <link rel="stylesheet" href="/style.css?v=6">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
-  <a class="skip-link" href="#menu">Skip to coffee menu</a>
+  <a class="skip-link" href="#six-pack">Skip to build a 6-pack</a>
 
   <header class="topbar">
     <a class="brand" href="#top" aria-label="Rally Point Refreshments home">
-      <span class="brand-mark" aria-hidden="true">★</span>
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 40" role="img">
+          <path d="M20 3.5 24.6 13l10.4 1.5-7.5 7.3 1.8 10.3L20 27.2l-9.3 4.9 1.8-10.3L5 14.5 15.4 13 20 3.5Z"/>
+        </svg>
+      </span>
       <span>
         <strong>Rally Point</strong>
         <small>Refreshments</small>
       </span>
     </a>
 
-    <button class="cart-pill" id="cartPill" type="button" aria-label="Open cart">
-      <span>Cart</span>
-      <b id="cartCount">0</b>
-    </button>
+    <div class="top-actions">
+      <a class="text-us-pill" href="sms:+12522260557" aria-label="Text Rally Point Refreshments">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 4.5h16v11H9l-5 4v-15Z"/>
+          <path d="M8 9h8M8 12h5"/>
+        </svg>
+        <b>Text us</b>
+      </a>
+
+      <button class="cart-pill" id="cartPill" type="button" aria-label="Open cart">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M3 4h2l2.2 10.2h9.6L19 7H6"/>
+          <circle cx="9" cy="19" r="1.5"/>
+          <circle cx="17" cy="19" r="1.5"/>
+        </svg>
+        <span>Cart</span>
+        <b id="cartCount">0</b>
+      </button>
+    </div>
   </header>
 
   <main id="top">
@@ -44,20 +63,23 @@
         </div>
 
         <p class="eyebrow">Veteran owned • Henderson, NC</p>
-        <h1>Fresh coffee.<br>Ready to grab.</h1>
+        <h1>Stock the fridge.<br>Save $6.</h1>
         <p class="hero-sub">
-          Pick your flavors, place the order, and receive an instant confirmation number.
+          Build any six flavors for $30 — just $5 per bottle and our best overall value.
         </p>
 
         <div class="hero-actions">
-          <a class="primary" href="#menu">Order coffee</a>
-          <a class="secondary" href="#packs">Build a 6-pack</a>
+          <a class="primary primary-offer" href="#six-pack">
+            <span>Build a 6-Pack</span>
+            <small>$30 • Save $6 vs. singles</small>
+          </a>
+          <a class="secondary" href="#menu">Shop singles</a>
         </div>
 
         <div class="hero-proof">
-          <span><strong>$6</strong> singles</span>
+          <span class="hero-proof-best"><strong>$30</strong> 6-pack • $5 each</span>
           <span><strong>$17</strong> 3-pack</span>
-          <span><strong>$30</strong> 6-pack</span>
+          <span><strong>$6</strong> singles</span>
         </div>
       </div>
     </section>
@@ -67,37 +89,63 @@
         <strong id="orderDeadline">Order by Thursday</strong>
         <span>for Saturday pickup</span>
       </div>
-      <a href="#menu">Choose flavors →</a>
+      <a href="#six-pack">Build yours →</a>
     </section>
 
-    <section class="section menu-section" id="menu">
-      <div class="section-head compact">
-        <div>
-          <p class="eyebrow dark">Quick order</p>
-          <h2>Tap to add a bottle.</h2>
+    <section class="featured-section" id="favorites">
+      <div class="featured-inner">
+        <div class="featured-head">
+          <div>
+            <p class="eyebrow">Customer favorites</p>
+            <h2>Start with the top three.</h2>
+          </div>
+          <p>Not sure what to choose? These flavors make the decision easy.</p>
         </div>
-        <p>Best sellers appear first. Adjust quantities from your cart.</p>
+        <div class="featured-grid" id="featuredGrid"></div>
       </div>
-
-      <div class="filter-row" aria-label="Menu shortcuts">
-        <button class="filter active" type="button" data-filter="all">All flavors</button>
-        <button class="filter" type="button" data-filter="best">Best sellers</button>
-        <button class="filter" type="button" data-filter="chocolate">Chocolate</button>
-      </div>
-
-      <div class="product-grid" id="productGrid"></div>
     </section>
 
     <section class="section pack-section" id="packs">
       <div class="section-head compact">
         <div>
-          <p class="eyebrow dark">Save with a pack</p>
-          <h2>Build it in seconds.</h2>
+          <p class="eyebrow dark">Best overall value</p>
+          <h2>Build your pack.</h2>
         </div>
-        <p>Tap plus beside each flavor until your pack is full.</p>
+        <p>Choose any combination, including multiples of the same flavor.</p>
       </div>
 
       <div class="pack-grid">
+        <article class="pack-card featured" id="six-pack" data-pack-size="6" data-price="30">
+          <div class="best-value">Most popular value</div>
+
+          <div class="pack-title">
+            <div>
+              <p class="pack-label">Stock the fridge</p>
+              <h3>6-Pack</h3>
+              <span>Any six bottles • $5 each</span>
+            </div>
+            <strong>$30</strong>
+          </div>
+
+          <div class="pack-savings">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2v20M17 6.5c0-2-1.8-3.5-5-3.5S7 4.4 7 6.5 8.7 9.6 12 10.2s5 1.6 5 3.8-1.8 4-5 4-5-1.7-5-4"/>
+            </svg>
+            Save $6 compared with six singles
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-copy">
+              <span>Selected</span>
+              <b class="pack-count">0 / 6</b>
+            </div>
+            <div class="progress-track"><span class="progress-bar"></span></div>
+          </div>
+
+          <div class="pack-options"></div>
+          <button class="pack-add" type="button" disabled>Add 6-Pack — $30</button>
+        </article>
+
         <article class="pack-card" data-pack-size="3" data-price="17">
           <div class="pack-title">
             <div>
@@ -119,46 +167,62 @@
           <div class="pack-options"></div>
           <button class="pack-add" type="button" disabled>Add 3-Pack — $17</button>
         </article>
-
-        <article class="pack-card featured" data-pack-size="6" data-price="30">
-          <div class="best-value">Best value</div>
-
-          <div class="pack-title">
-            <div>
-              <p class="pack-label">Stock the fridge</p>
-              <h3>6-Pack</h3>
-              <span>Any six bottles</span>
-            </div>
-            <strong>$30</strong>
-          </div>
-
-          <div class="progress-wrap">
-            <div class="progress-copy">
-              <span>Selected</span>
-              <b class="pack-count">0 / 6</b>
-            </div>
-            <div class="progress-track"><span class="progress-bar"></span></div>
-          </div>
-
-          <div class="pack-options"></div>
-          <button class="pack-add" type="button" disabled>Add 6-Pack — $30</button>
-        </article>
       </div>
+    </section>
+
+    <section class="section menu-section" id="menu">
+      <div class="section-head compact">
+        <div>
+          <p class="eyebrow dark">Full coffee lineup</p>
+          <h2>Or grab a single.</h2>
+        </div>
+        <p>Tap any flavor to add a $6 bottle. Adjust quantities from your cart.</p>
+      </div>
+
+      <div class="filter-row" aria-label="Menu shortcuts">
+        <button class="filter active" type="button" data-filter="all">All flavors</button>
+        <button class="filter" type="button" data-filter="best">Best sellers</button>
+        <button class="filter" type="button" data-filter="chocolate">Chocolate</button>
+      </div>
+
+      <div class="product-grid" id="productGrid"></div>
     </section>
 
     <section class="details-section">
       <div class="details-grid">
         <article>
-          <strong>Keep refrigerated</strong>
-          <span>Bottled fresh and intended to stay chilled.</span>
+          <span class="detail-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M7 3h10v18H7zM7 9h10M10 6h4"/>
+            </svg>
+          </span>
+          <div>
+            <strong>Keep refrigerated</strong>
+            <span>Bottled fresh and intended to stay chilled.</span>
+          </div>
         </article>
         <article>
-          <strong>Saturday pickup</strong>
-          <span>We confirm the exact pickup details after ordering.</span>
+          <span class="detail-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 6h16v14H4zM8 3v6M16 3v6M4 10h16"/>
+              <path d="m9 15 2 2 4-5"/>
+            </svg>
+          </span>
+          <div>
+            <strong>Saturday pickup</strong>
+            <span>We text the exact pickup details after ordering.</span>
+          </div>
         </article>
         <article>
-          <strong>Pay at pickup</strong>
-          <span>No online payment is required to reserve your order.</span>
+          <span class="detail-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M3 6h18v13H3zM3 10h18M16 15h2"/>
+            </svg>
+          </span>
+          <div>
+            <strong>Pay at pickup</strong>
+            <span>No online payment is required to reserve your order.</span>
+          </div>
         </article>
       </div>
     </section>
@@ -178,6 +242,14 @@
             <span>✓ Mix-and-match packs</span>
             <span>✓ Instant order confirmation</span>
           </div>
+
+          <a class="contact-text-button" href="sms:+12522260557">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 4.5h16v11H9l-5 4v-15Z"/>
+              <path d="M8 9h8M8 12h5"/>
+            </svg>
+            Text us at (252) 226-0557
+          </a>
         </div>
       </div>
     </section>
@@ -214,7 +286,7 @@
       <form class="checkout" id="checkoutForm">
         <div class="pickup-box">
           <strong id="pickupDateText">Saturday pickup</strong>
-          <span>We will confirm the exact pickup details by text.</span>
+          <span>We will text you with the exact pickup time and location.</span>
         </div>
 
         <label>
@@ -230,15 +302,6 @@
         <label>
           Email <span class="optional">(optional receipt)</span>
           <input id="email" name="email" type="email" autocomplete="email" maxlength="120" placeholder="you@example.com">
-        </label>
-
-        <label>
-          Preferred pickup window
-          <select id="pickupWindow" name="pickupWindow">
-            <option value="Morning">Morning</option>
-            <option value="Afternoon" selected>Afternoon</option>
-            <option value="Evening">Evening</option>
-          </select>
         </label>
 
         <label>
@@ -279,7 +342,7 @@
       </div>
 
       <p class="confirmation-copy">
-        We saved your order and will contact you with pickup confirmation.
+        We saved your order and will text you with the exact pickup details.
       </p>
 
       <button class="primary full" id="closeConfirmation" type="button">Done</button>
@@ -288,6 +351,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=4"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>

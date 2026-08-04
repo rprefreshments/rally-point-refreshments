@@ -1,6 +1,6 @@
 # Rally Point Refreshments — Real Order System
 
-This version replaces the text-only checkout with:
+This version includes a real order system plus quick customer texting and automatic email:
 
 - Automatic order saving
 - Server-calculated prices
@@ -75,3 +75,13 @@ The code automatically sends the business a new-order email when the secret is c
 - Prices are recalculated by the Worker; the browser cannot choose its own total.
 - The admin dashboard and order API require the admin password.
 - Do not put `ADMIN_PASSWORD` or `RESEND_API_KEY` in GitHub.
+
+
+## Text and email setup
+
+See `EMAIL_SETUP.md` for the exact Resend and Cloudflare setup steps.
+
+
+## V6 conversion update
+
+See `V6_UPDATE.md` for installation and testing instructions.

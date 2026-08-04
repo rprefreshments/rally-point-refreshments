@@ -19,7 +19,9 @@ function formatPickup(value, windowName) {
     month: "short",
     day: "numeric"
   }).format(date);
-  return `${formatted} • ${windowName}`;
+  return windowName === "Details confirmed by text"
+    ? `${formatted} • Details by text`
+    : `${formatted} • ${windowName}`;
 }
 
 function summarizeItems(items) {

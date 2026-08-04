@@ -22,6 +22,7 @@
   ],
   "vars": {
     "ORDER_EMAIL": "rprefreshment@gmail.com",
-    "EMAIL_FROM": "Rally Point Orders <orders@rallypointrefreshments.com>"
+    "EMAIL_FROM": "Rally Point Orders <orders@rallypointrefreshments.com>",
+    "PUBLIC_SITE_URL": "https://rallypointrefreshments.com"
   }
 }
