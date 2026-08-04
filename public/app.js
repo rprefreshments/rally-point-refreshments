@@ -122,11 +122,30 @@ function iconSvg(type) {
   return icons[type] || icons.mocha;
 }
 
+// Orders close Thursday at 6pm for that week's Saturday pickup.
+// After the cutoff, the next available pickup rolls to the following Saturday.
+const ORDER_CUTOFF_DAY = 4;   // Thursday
+const ORDER_CUTOFF_HOUR = 18; // 6pm
+
+function getOrderDeadline(forPickup) {
+  const deadline = new Date(forPickup);
+  deadline.setDate(forPickup.getDate() - 2); // Thursday before Saturday
+  deadline.setHours(ORDER_CUTOFF_HOUR, 0, 0, 0);
+  return deadline;
+}
+
 function getNextSaturday() {
   const now = new Date();
   const day = now.getDay();
   let add = (6 - day + 7) % 7;
-  if (add === 0 && now.getHours() >= 12) add = 7;
+
+  // Already Saturday, or past this week's Thursday 6pm cutoff -> next week.
+  const pastCutoff =
+    day > ORDER_CUTOFF_DAY ||
+    (day === ORDER_CUTOFF_DAY && now.getHours() >= ORDER_CUTOFF_HOUR);
+
+  if (add === 0 || pastCutoff) add = add === 0 ? 7 : add + 7;
+
   const next = new Date(now);
   next.setDate(now.getDate() + add);
   next.setHours(12, 0, 0, 0);
@@ -150,8 +169,36 @@ function formatPickupDate(date) {
 
 const pickupDate = getNextSaturday();
 const pickupIso = toLocalIsoDate(pickupDate);
+const orderDeadline = getOrderDeadline(pickupDate);
 document.getElementById("pickupBanner").textContent = `Fresh pickup ${formatPickupDate(pickupDate)}`;
 document.getElementById("pickupDateText").textContent = `${formatPickupDate(pickupDate)} pickup`;
+
+function renderDeadlineCountdown() {
+  const target = document.getElementById("orderDeadline");
+  if (!target) return;
+
+  const msLeft = orderDeadline - new Date();
+  if (msLeft <= 0) {
+    target.textContent = "Ordering now open";
+    return;
+  }
+
+  const hoursLeft = Math.floor(msLeft / 3_600_000);
+  const daysLeft = Math.floor(hoursLeft / 24);
+
+  if (daysLeft >= 2) {
+    target.textContent = `${daysLeft} days left to order`;
+  } else if (hoursLeft >= 24) {
+    target.textContent = "1 day left to order";
+  } else if (hoursLeft >= 1) {
+    target.textContent = `Only ${hoursLeft} ${hoursLeft === 1 ? "hour" : "hours"} left to order`;
+  } else {
+    target.textContent = "Last call — ordering closes soon";
+  }
+}
+
+renderDeadlineCountdown();
+setInterval(renderDeadlineCountdown, 60_000);
 
 function productCard(product, index, featured = false) {
   return `
@@ -434,7 +481,7 @@ document.getElementById("textOrder").addEventListener("click", () => {
     toast("Add coffee before checking out");
     return;
   }
-  window.location.href = `sms:${BUSINESS_PHONE}&body=${encodeURIComponent(buildTextMessage())}`;
+  window.location.href = `sms:${BUSINESS_PHONE}?body=${encodeURIComponent(buildTextMessage())}`;
 });
 
 const confirmationOverlay = document.getElementById("confirmationOverlay");
@@ -464,7 +511,8 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
     return;
   }
 
-  if (phone.replace(/\D/g, "").length < 10) {
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (phoneDigits.length < 10 || phoneDigits.length > 15 || /[a-zA-Z]/.test(phone)) {
     toast("Enter a valid phone number");
     document.getElementById("phone").focus();
     return;
@@ -526,7 +574,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js?v=6").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js?v=7").catch(() => {});
   });
 }
 

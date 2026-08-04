@@ -13,12 +13,14 @@ This version includes a real order system plus quick customer texting and automa
 ## Deploy
 
 1. Extract this ZIP.
-2. Upload the **contents** to the root of the existing GitHub repository.
-3. Keep the Cloudflare deploy command as:
+2. Copy `src/worker.js` into your repository's `src/` folder.
+3. Copy everything inside `public/` into your repository's `public/` folder (this includes `index.html`, `style.css`, `app.js`, `admin.html`, `admin.css`, `admin.js`, `manifest.json`, `service-worker.js`, and the `images/` folder).
+4. Do **not** place these files at the repository root — `wrangler.jsonc` expects `main: "src/worker.js"` and `assets.directory: "./public"`. Placing files at the root will make `npx wrangler deploy` fail.
+5. Keep the Cloudflare deploy command as:
 
    `npx wrangler deploy`
 
-4. Commit the changes. Cloudflare will deploy automatically.
+6. Commit the changes. Cloudflare will deploy automatically.
 
 The Wrangler configuration requests a D1 binding named `DB`. Modern Wrangler deployments can automatically provision the D1 database when the project deploys. The Worker creates its own orders table on the first API request.
 

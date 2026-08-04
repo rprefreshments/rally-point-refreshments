@@ -18,6 +18,9 @@ export default {
 
     try {
       if (url.pathname === "/api/orders" && request.method === "POST") {
+        if (isRateLimited(request)) {
+          return json({ok: false, error: "Too many orders from this connection. Please wait a few minutes and try again, or text us instead."}, 429);
+        }
         return await createOrder(request, env, ctx);
       }
 
@@ -50,7 +53,10 @@ export default {
   }
 };
 
+let schemaReady = false;
+
 async function ensureDatabase(env) {
+  if (schemaReady) return;
   if (!env.DB) throw new Error("D1 binding DB is not available.");
 
   await env.DB.batch([
@@ -74,13 +80,73 @@ async function ensureDatabase(env) {
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`)
   ]);
+
+  schemaReady = true;
+}
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const rateLimitState = new Map();
+
+function isRateLimited(request) {
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+
+  if (rateLimitState.size > 10_000) rateLimitState.clear();
+
+  const timestamps = (rateLimitState.get(ip) || []).filter(ts => ts > windowStart);
+
+  if (timestamps.length >= RATE_LIMIT_MAX) {
+    rateLimitState.set(ip, timestamps);
+    return true;
+  }
+
+  timestamps.push(now);
+  rateLimitState.set(ip, timestamps);
+  return false;
+}
+
+const MAX_ORDER_BYTES = 50_000;
+
+async function readLimitedJson(request, maxBytes) {
+  const reader = request.body?.getReader();
+  if (!reader) return {body: null};
+
+  const chunks = [];
+  let total = 0;
+
+  while (true) {
+    const {done, value} = await reader.read();
+    if (done) break;
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return {tooLarge: true};
+    }
+    chunks.push(value);
+  }
+
+  const buffer = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    return {body: JSON.parse(new TextDecoder().decode(buffer))};
+  } catch {
+    return {body: null};
+  }
 }
 
 async function createOrder(request, env, ctx) {
-  const contentLength = Number(request.headers.get("content-length") || 0);
-  if (contentLength > 50_000) return json({ok: false, error: "Order request is too large."}, 413);
+  const payload = await readLimitedJson(request, MAX_ORDER_BYTES);
+  if (payload.tooLarge) return json({ok: false, error: "Order request is too large."}, 413);
 
-  const body = await request.json().catch(() => null);
+  const body = payload.body;
   if (!body || typeof body !== "object") return json({ok: false, error: "Invalid order."}, 400);
 
   // Quiet bot trap. A normal customer never sees or fills this field.
@@ -97,7 +163,8 @@ async function createOrder(request, env, ctx) {
   const notes = clean(body.notes, 500);
 
   if (customerName.length < 2) return json({ok: false, error: "Please enter your name."}, 400);
-  if (customerPhone.replace(/\D/g, "").length < 10) {
+  const phoneDigits = customerPhone.replace(/\D/g, "");
+  if (phoneDigits.length < 10 || phoneDigits.length > 15 || /[a-zA-Z]/.test(customerPhone)) {
     return json({ok: false, error: "Please enter a valid phone number."}, 400);
   }
   if (customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {

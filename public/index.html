@@ -4,14 +4,42 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#03152d">
-  <meta name="description" content="Order handcrafted bottled lattes from Rally Point Refreshments in Henderson, North Carolina.">
-  <meta property="og:title" content="Rally Point Refreshments">
+  <meta name="description" content="Handcrafted bottled lattes in Henderson, NC. Veteran-owned. Build a mix-and-match 6-pack for $30 with Saturday pickup. Order by Thursday 6pm.">
+  <meta property="og:title" content="Rally Point Refreshments — Bottled Lattes in Henderson, NC">
   <meta property="og:description" content="Build a mix-and-match 6-pack of veteran-owned bottled coffee for Saturday pickup.">
-  <meta property="og:image" content="/bottles.jpg">
-  <link rel="manifest" href="/manifest.json?v=6">
-  <link rel="apple-touch-icon" href="/bottles.jpg">
-  <link rel="preload" as="image" href="/bottles.jpg">
-  <link rel="stylesheet" href="/style.css?v=6">
+  <meta property="og:image" content="/images/bottles.jpg">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://rallypointrefreshments.com">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://rallypointrefreshments.com">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FoodEstablishment",
+    "name": "Rally Point Refreshments",
+    "description": "Veteran-owned family business serving handcrafted bottled lattes in Henderson, North Carolina.",
+    "url": "https://rallypointrefreshments.com",
+    "telephone": "+1-252-226-0557",
+    "email": "rprefreshment@gmail.com",
+    "servesCuisine": "Coffee",
+    "priceRange": "$",
+    "image": "https://rallypointrefreshments.com/images/bottles.jpg",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Henderson",
+      "addressRegion": "NC",
+      "addressCountry": "US"
+    },
+    "areaServed": {
+      "@type": "City",
+      "name": "Henderson, North Carolina"
+    }
+  }
+  </script>
+  <link rel="manifest" href="/manifest.json?v=7">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="preload" as="image" href="/images/bottles.jpg">
+  <link rel="stylesheet" href="/style.css?v=7">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
@@ -53,7 +81,7 @@
 
   <main id="top">
     <section class="hero">
-      <img src="/bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
+      <img src="/images/bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
       <div class="hero-shade"></div>
 
       <div class="hero-copy">
@@ -87,7 +115,7 @@
     <section class="deadline-strip" aria-label="Ordering information">
       <div>
         <strong id="orderDeadline">Order by Thursday</strong>
-        <span>for Saturday pickup</span>
+        <span id="orderDeadlineSub">Cutoff is Thursday 6pm for Saturday pickup</span>
       </div>
       <a href="#six-pack">Build yours →</a>
     </section>
@@ -227,9 +255,25 @@
       </div>
     </section>
 
+    <section class="bulk-section" id="bulk">
+      <div class="bulk-card">
+        <div>
+          <p class="eyebrow">Offices, businesses & events</p>
+          <h2>Need more than six?</h2>
+          <p>
+            We supply bottled lattes for offices, meetings, church events, and parties around Henderson.
+            Tell us your headcount and date and we will send back bulk pricing.
+          </p>
+        </div>
+        <a class="bulk-cta" href="sms:+12522260557?body=Hi%20Rally%20Point%2C%20I%27d%20like%20bulk%20pricing%20for%20an%20office%2Fevent.%20Headcount%3A%20%20%20Date%3A%20">
+          Ask about bulk pricing
+        </a>
+      </div>
+    </section>
+
     <section class="trust-section">
       <div class="trust-card">
-        <img src="/brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
+        <img src="/images/brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
         <div>
           <p class="eyebrow dark">Why Rally Point?</p>
           <h2>Made locally. Ordered simply.</h2>
@@ -351,6 +395,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=6"></script>
+  <script src="/app.js?v=7"></script>
 </body>
 </html>

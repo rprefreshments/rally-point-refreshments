@@ -1357,3 +1357,47 @@ h1{
   }
   .secondary{min-height:45px}
 }
+
+/* Bulk / office & event orders */
+.bulk-section{
+  padding:44px 15px;
+  background:linear-gradient(140deg,var(--navy),#0a2c53);
+  color:#fff;
+}
+.bulk-card{
+  display:grid;
+  gap:20px;
+  align-items:center;
+  max-width:1090px;
+  margin:auto;
+}
+.bulk-card h2{
+  margin:0 0 9px;
+  color:#fff;
+  font-size:clamp(30px,7vw,46px);
+  line-height:1;
+  letter-spacing:-.04em;
+}
+.bulk-card>div>p:last-child{
+  margin:0;
+  max-width:520px;
+  color:#dbe7f4;
+  font-size:15.5px;
+}
+.bulk-cta{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:54px;
+  padding:0 26px;
+  border-radius:14px;
+  background:#ffd475;
+  color:var(--navy);
+  font-weight:900;
+  text-decoration:none;
+  box-shadow:0 12px 28px rgba(0,0,0,.22);
+}
+.bulk-cta:hover{background:#ffc94a}
+@media(min-width:720px){
+  .bulk-card{grid-template-columns:1fr auto}
+}

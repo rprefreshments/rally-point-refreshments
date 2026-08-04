@@ -107,7 +107,7 @@ function renderOrders() {
     const digits = order.customer_phone.replace(/\D/g, "");
     fragment.querySelector(".call-link").href = `tel:${digits}`;
     fragment.querySelector(".text-link").href =
-      `sms:${digits}&body=${encodeURIComponent(`Hi ${order.customer_name}, this is Rally Point Refreshments regarding order ${order.order_number}.`)}`;
+      `sms:${digits}?body=${encodeURIComponent(`Hi ${order.customer_name}, this is Rally Point Refreshments regarding order ${order.order_number}.`)}`;
 
     card.dataset.id = order.id;
     ordersWrap.appendChild(fragment);

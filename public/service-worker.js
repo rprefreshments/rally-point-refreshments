@@ -1,12 +1,15 @@
-const CACHE_NAME = "rally-point-v6";
+const CACHE_NAME = "rally-point-v7";
 const ASSETS = [
   "/",
   "/index.html",
-  "/style.css?v=6",
-  "/app.js?v=6",
-  "/manifest.json?v=6",
-  "/bottles.jpg",
-  "/brand-card.jpg"
+  "/style.css?v=7",
+  "/app.js?v=7",
+  "/manifest.json?v=7",
+  "/images/bottles.jpg",
+  "/images/brand-card.jpg",
+  "/images/icon-192.png",
+  "/images/icon-512.png",
+  "/images/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", event => {
@@ -26,19 +29,31 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   const url = new URL(event.request.url);
 
-  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/admin")) {
+  if (
+    event.request.method !== "GET" ||
+    url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/admin")
+  ) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        if (event.request.method === "GET" && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.open(CACHE_NAME).then(async cache => {
+      const cached = await cache.match(event.request);
+
+      const network = fetch(event.request)
+        .then(response => {
+          if (response.ok) cache.put(event.request, response.clone());
+          return response;
+        })
+        .catch(() => null);
+
+      if (cached) {
+        event.waitUntil(network);
+        return cached;
+      }
+
+      return (await network) || Response.error();
+    })
   );
 });
