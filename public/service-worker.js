@@ -1,9 +1,9 @@
-const CACHE_NAME = "rally-point-v11";
+const CACHE_NAME = "rally-point-v12";
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css?v=11",
-  "/app.js?v=11",
+  "/app.js?v=12",
   "/manifest.json?v=11",
   "/images/brand-card.jpg",
   "/images/marketing-hero-v1.webp",

@@ -563,7 +563,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 });
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js?v=11").catch(() => {}));
+  window.addEventListener("load", () => navigator.serviceWorker.register("/service-worker.js?v=12").catch(() => {}));
 }
 
 renderCoffeeClub();
