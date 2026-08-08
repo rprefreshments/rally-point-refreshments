@@ -38,6 +38,22 @@ header button{
   border-radius:10px;background:rgba(255,255,255,.1);color:white;font-weight:800
 }
 main{max-width:1180px;margin:auto;padding:22px 15px 60px}
+.week-panel{
+  display:flex;align-items:end;justify-content:space-between;gap:20px;
+  margin-bottom:16px;padding:19px 20px;border:1px solid var(--line);border-radius:18px;
+  background:white;box-shadow:0 8px 24px rgba(45,29,12,.05)
+}
+.week-panel small,.panel-head small{
+  color:var(--red);font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase
+}
+.week-panel h1{margin:3px 0 4px;color:var(--navy);font-size:25px;line-height:1.1}
+.week-panel p,.panel-head p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.week-select{min-width:230px;color:var(--navy);font-size:12px;font-weight:850}
+.week-select span{display:block;margin-bottom:5px}
+.week-select select{
+  width:100%;min-height:44px;padding:9px 34px 9px 11px;border:1px solid var(--line);
+  border-radius:10px;background:white;color:var(--navy);font-weight:750
+}
 .tabs{
   display:flex;gap:8px;margin-bottom:16px;padding:5px;
   border:1px solid var(--line);border-radius:14px;background:white
@@ -63,6 +79,63 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
 }
 .stat strong{color:var(--navy);font-size:15px}
 .stat span{color:var(--muted);font-size:12px}
+.operations-grid{display:grid;gap:14px;margin:16px 0 18px}
+.production-panel,.attention-panel{
+  min-width:0;padding:20px;border:1px solid var(--line);border-radius:18px;background:white;
+  box-shadow:0 8px 24px rgba(45,29,12,.05)
+}
+.panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.panel-head h2{margin:3px 0 4px;color:var(--navy);font-size:22px;line-height:1.15}
+.panel-action{
+  flex:none;min-height:44px;padding:9px 13px;border:1px solid var(--navy);border-radius:10px;
+  background:white;color:var(--navy);font-weight:850;cursor:pointer
+}
+.panel-action:hover{background:var(--navy);color:white}
+.panel-count{
+  min-width:34px;min-height:34px;display:grid;place-items:center;padding:5px 9px;border-radius:999px;
+  background:var(--navy);color:white;font-size:13px
+}
+.panel-count.has-alerts{background:var(--red)}
+.production-totals{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:17px 0 13px
+}
+.production-total{
+  min-width:0;padding:11px;border:1px solid #e8ddce;border-radius:12px;background:var(--paper)
+}
+.production-total strong,.production-total span{display:block}
+.production-total strong{color:var(--navy);font-size:21px;line-height:1}
+.production-total span{margin-top:5px;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
+.production-flavors{display:grid;gap:7px}
+.production-flavor{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;
+  min-height:44px;padding:9px 11px;border-radius:11px;background:#f6efe5
+}
+.production-flavor span{min-width:0;color:var(--navy);font-size:13px;font-weight:750}
+.production-flavor strong{color:var(--red);font-size:18px}
+.production-flavor strong small{color:var(--muted);font-size:10px;text-transform:uppercase}
+.attention-list{display:grid;gap:8px;margin-top:17px}
+.attention-order{
+  width:100%;min-height:58px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;
+  gap:12px;padding:10px 11px;border:1px solid #eaded0;border-radius:12px;background:var(--paper);
+  color:var(--navy);text-align:left;cursor:pointer
+}
+.attention-order:hover{border-color:#cdbda7;background:#fff}
+.attention-order>span:first-child{min-width:0}
+.attention-order strong,.attention-order small{display:block}
+.attention-order strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.attention-order small{margin-top:3px;color:var(--muted);font-size:11px}
+.attention-order>span:last-child{color:var(--red);font-size:12px;font-weight:850;white-space:nowrap}
+.attention-badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.attention-badge{
+  padding:4px 7px;border-radius:999px;background:#f0e7d9;color:#725d43;
+  font-size:10px;font-weight:850;line-height:1.2
+}
+.attention-badge.urgent{background:#feecee;color:#a81824}
+.attention-badge.delivery{background:#fff2d8;color:#7b4a00}
+.attention-badge.note{background:#e7f4ff;color:#175b8b}
+.panel-empty{display:block;padding:18px 0 4px;color:var(--muted);font-size:13px}
+.order-card.is-focused{animation:focusOrder 1.6s ease;outline:3px solid rgba(200,33,44,.25)}
+@keyframes focusOrder{0%,100%{transform:translateY(0)}35%{transform:translateY(-3px)}}
 .toolbar{
   display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-bottom:14px
 }
@@ -159,6 +232,9 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
   .orders{grid-template-columns:repeat(2,1fr)}
   .customer-grid{grid-template-columns:repeat(4,1fr)}
 }
+@media(min-width:900px){
+  .operations-grid{grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr)}
+}
 /* Coffee Club and fulfillment preferences */
 .reminder-panel{
   margin:18px 0;
@@ -227,8 +303,27 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
 .preference.delivery{background:#fff2d8;color:#7b4a00}
 .preference.club{background:#e7f4ff;color:#175b8b}
 @media(max-width:620px){
+  .week-panel{display:grid;padding:17px}
+  .week-select{min-width:0;width:100%}
+  .production-panel,.attention-panel{padding:17px}
+  .panel-head{align-items:flex-start}
+  .panel-action{padding:8px 10px;font-size:12px}
+  .production-totals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .attention-order{grid-template-columns:1fr}
+  .attention-order>span:last-child{justify-self:start}
   .reminder-head{display:grid}
   .reminder-head>strong{justify-self:start}
   .reminder-member{align-items:flex-start;flex-direction:column}
   .reminder-member a{width:100%;justify-content:center}
+}
+
+@media print{
+  body{background:white;color:#111}
+  body>header,.week-panel,.tabs,.stats,.attention-panel,.reminder-panel,.toolbar,
+  .summary,.bulk-bar,.select-all,.orders{display:none!important}
+  main{max-width:none;margin:0;padding:0}
+  .operations-grid{display:block;margin:0}
+  .production-panel{padding:0;border:0;box-shadow:none}
+  .panel-action{display:none}
+  .production-total,.production-flavor{break-inside:avoid;background:white}
 }

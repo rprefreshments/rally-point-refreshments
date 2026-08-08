@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#06182f">
-  <link rel="stylesheet" href="/admin.css?v=10">
+  <link rel="stylesheet" href="/admin.css?v=11">
   <title>Rally Point Orders</title>
 </head>
 <body>
@@ -20,6 +20,18 @@
   </header>
 
   <main>
+    <section class="week-panel" aria-labelledby="weekTitle">
+      <div>
+        <small>Operations view</small>
+        <h1 id="weekTitle">Saturday prep dashboard</h1>
+        <p id="weekDescription">Choose a pickup week to see exactly what needs to happen.</p>
+      </div>
+      <label class="week-select">
+        <span>Pickup week</span>
+        <select id="weekFilter" aria-label="Pickup week"></select>
+      </label>
+    </section>
+
     <div class="tabs" role="tablist" aria-label="Order lists">
       <button class="tab active" id="tabActive" type="button" role="tab" aria-selected="true" data-tab="active">
         Active <b id="countActive">0</b>
@@ -30,6 +42,35 @@
     </div>
 
     <section class="stats" id="stats"></section>
+
+    <div class="operations-grid">
+      <section class="production-panel" aria-labelledby="productionTitle">
+        <div class="panel-head">
+          <div>
+            <small>What to make</small>
+            <h2 id="productionTitle">Production sheet</h2>
+            <p id="productionMeta">Waiting for order data...</p>
+          </div>
+          <button class="panel-action" id="printProduction" type="button">Print prep sheet</button>
+        </div>
+        <div class="production-totals" id="productionTotals"></div>
+        <div class="production-flavors" id="productionFlavors"></div>
+      </section>
+
+      <section class="attention-panel" aria-labelledby="attentionTitle">
+        <div class="panel-head">
+          <div>
+            <small>Exceptions</small>
+            <h2 id="attentionTitle">Needs attention</h2>
+            <p>Payment issues, delivery requests, customer notes, and refund checks.</p>
+          </div>
+          <strong class="panel-count" id="attentionCount" aria-live="polite">0</strong>
+        </div>
+        <div class="attention-list" id="attentionList">
+          <span class="panel-empty">Nothing needs attention.</span>
+        </div>
+      </section>
+    </div>
 
     <section class="reminder-panel" aria-labelledby="reminderTitle">
       <div class="reminder-head">
@@ -138,6 +179,6 @@
     </article>
   </template>
 
-  <script src="/admin.js?v=10"></script>
+  <script src="/admin.js?v=11"></script>
 </body>
 </html>

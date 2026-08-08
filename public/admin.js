@@ -1,4 +1,13 @@
 const money = cents => `$${(Number(cents) / 100).toFixed(2).replace(".00", "")}`;
+const FLAVOR_ORDER = [
+  "Brown Sugar Cinnamon Latte",
+  "Gourmet Sea Salt Caramel Latte",
+  "Midnight Mocha Latte",
+  "Double Vanilla Bean Oatmilk Latte",
+  "Copycat Blondie Latte",
+  "Sweet & Salty Hazelnut Latte",
+  "White Chocolate Mocha Latte"
+];
 const escapeHtml = value => String(value ?? "")
   .replaceAll("&", "&amp;")
   .replaceAll("<", "&lt;")
@@ -10,6 +19,7 @@ const template = document.getElementById("orderTemplate");
 let orders = [];
 const selectedIds = new Set();
 let autoRefreshTimer = null;
+let selectedPickupDate = "";
 
 // An order is "done" once it is picked up or cancelled; those move to the
 // Completed tab so the working list only shows what still needs attention.
@@ -25,6 +35,28 @@ let activeTab = "active";
 
 const isDone = order => DONE_STATUSES.has(order.status);
 const inActiveTab = order => (activeTab === "done" ? isDone(order) : !isDone(order));
+const parsePickupDate = value => new Date(`${value}T12:00:00`);
+
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatPickupDay(value) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric"
+  }).format(parsePickupDate(value));
+}
+
+function getWeekOrders() {
+  return selectedPickupDate === "all"
+    ? [...orders]
+    : orders.filter(order => order.pickup_date === selectedPickupDate);
+}
 
 function formatCreated(value) {
   return new Intl.DateTimeFormat("en-US", {
@@ -36,7 +68,7 @@ function formatCreated(value) {
 }
 
 function formatPickup(value, windowName) {
-  const date = new Date(`${value}T12:00:00`);
+  const date = parsePickupDate(value);
   const formatted = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
@@ -45,6 +77,161 @@ function formatPickup(value, windowName) {
   return windowName === "Details confirmed by text"
     ? `${formatted} • 10 AM in Henderson`
     : `${formatted} • ${windowName}`;
+}
+
+function renderWeekOptions() {
+  const select = document.getElementById("weekFilter");
+  const dates = [...new Set(orders.map(order => order.pickup_date).filter(Boolean))];
+  const today = localDateKey();
+  const upcoming = dates.filter(value => value >= today).sort();
+  const past = dates.filter(value => value < today).sort().reverse();
+  const orderedDates = [...upcoming, ...past];
+
+  if (!selectedPickupDate || (selectedPickupDate !== "all" && !dates.includes(selectedPickupDate))) {
+    selectedPickupDate = upcoming[0] || past[0] || "all";
+  }
+
+  const nextPickup = upcoming[0];
+  const options = orderedDates.map(value => {
+    let context = "Past pickup";
+    if (value === today) context = "Pickup today";
+    else if (value === nextPickup) context = "Next pickup";
+    else if (value >= today) context = "Upcoming";
+    return `<option value="${escapeHtml(value)}">${escapeHtml(formatPickupDay(value))} · ${context}</option>`;
+  });
+  options.push('<option value="all">All pickup dates</option>');
+  select.innerHTML = options.join("");
+  select.value = selectedPickupDate;
+
+  const weekOrders = getWeekOrders();
+  document.getElementById("weekDescription").textContent = selectedPickupDate === "all"
+    ? `Showing all ${weekOrders.length} stored orders.`
+    : `${formatPickupDay(selectedPickupDate)} · ${weekOrders.length} order${weekOrders.length === 1 ? "" : "s"}`;
+}
+
+function getProductionSummary() {
+  const productionOrders = getWeekOrders().filter(order =>
+    order.payment_status === "COMPLETED" && order.status !== "cancelled"
+  );
+  const flavors = new Map();
+  let sixPacks = 0;
+  let threePacks = 0;
+  let singles = 0;
+  let addOns = 0;
+
+  const addFlavor = (name, count = 1) => {
+    if (!name || !Number.isFinite(count) || count < 1) return;
+    flavors.set(name, (flavors.get(name) || 0) + count);
+  };
+
+  productionOrders.forEach(order => {
+    (order.items || []).forEach(item => {
+      if (item.type === "pack") {
+        if (Number(item.size) === 6) sixPacks += 1;
+        if (Number(item.size) === 3) threePacks += 1;
+        (item.flavors || []).forEach(name => addFlavor(name));
+        return;
+      }
+
+      if (item.type === "single") {
+        const qty = Number(item.qty) || 0;
+        singles += qty;
+        if (item.bonus) addOns += qty;
+        addFlavor(item.name, qty);
+      }
+    });
+  });
+
+  const totalBottles = [...flavors.values()].reduce((sum, count) => sum + count, 0);
+  return {productionOrders, flavors, sixPacks, threePacks, singles, addOns, totalBottles};
+}
+
+function renderProduction() {
+  const summary = getProductionSummary();
+  const weekLabel = selectedPickupDate === "all" ? "All pickup dates" : formatPickupDay(selectedPickupDate);
+  document.getElementById("productionMeta").textContent =
+    `${weekLabel} · ${summary.productionOrders.length} paid, non-cancelled order${summary.productionOrders.length === 1 ? "" : "s"}`;
+
+  const totalCards = [
+    [summary.totalBottles, "Total bottles"],
+    [summary.sixPacks, "6-packs"],
+    [summary.threePacks, "3-packs"],
+    [summary.singles, summary.addOns ? `Singles · ${summary.addOns} add-on` : "Singles"]
+  ];
+  document.getElementById("productionTotals").innerHTML = totalCards.map(([value, label]) => `
+    <div class="production-total"><strong>${value}</strong><span>${escapeHtml(label)}</span></div>
+  `).join("");
+
+  const known = FLAVOR_ORDER.filter(name => summary.flavors.has(name));
+  const extra = [...summary.flavors.keys()].filter(name => !FLAVOR_ORDER.includes(name)).sort();
+  const flavorNames = [...known, ...extra];
+  document.getElementById("productionFlavors").innerHTML = flavorNames.length
+    ? flavorNames.map(name => `
+        <div class="production-flavor">
+          <span>${escapeHtml(name)}</span>
+          <strong>${summary.flavors.get(name)} <small>${summary.flavors.get(name) === 1 ? "bottle" : "bottles"}</small></strong>
+        </div>
+      `).join("")
+    : '<span class="panel-empty">No paid bottles to prepare for this pickup date.</span>';
+}
+
+function getAttentionIssues(order) {
+  const issues = [];
+  const paymentStatus = String(order.payment_status || "UNPAID").toUpperCase();
+  const active = !isDone(order);
+
+  if (order.status === "cancelled" && paymentStatus === "COMPLETED") {
+    issues.push({label: "Confirm Square refund", type: "urgent"});
+  } else if (active && paymentStatus === "FAILED") {
+    issues.push({label: "Payment failed", type: "urgent"});
+  } else if (active && paymentStatus === "PROCESSING") {
+    issues.push({label: "Payment processing", type: "urgent"});
+  } else if (active && paymentStatus !== "COMPLETED") {
+    issues.push({label: "Awaiting payment", type: "urgent"});
+  }
+
+  if (active && Boolean(order.delivery_interest)) {
+    issues.push({label: "Delivery follow-up", type: "delivery"});
+  }
+  if (active && String(order.notes || "").trim()) {
+    issues.push({label: "Customer note", type: "note"});
+  }
+  return issues;
+}
+
+function renderAttention() {
+  const attentionOrders = getWeekOrders()
+    .map(order => ({order, issues: getAttentionIssues(order)}))
+    .filter(item => item.issues.length)
+    .sort((a, b) => {
+      const urgentA = a.issues.some(issue => issue.type === "urgent") ? 1 : 0;
+      const urgentB = b.issues.some(issue => issue.type === "urgent") ? 1 : 0;
+      return urgentB - urgentA || new Date(b.order.created_at) - new Date(a.order.created_at);
+    });
+
+  const count = document.getElementById("attentionCount");
+  count.textContent = String(attentionOrders.length);
+  count.classList.toggle("has-alerts", attentionOrders.length > 0);
+
+  document.getElementById("attentionList").innerHTML = attentionOrders.length
+    ? attentionOrders.map(({order, issues}) => `
+        <button class="attention-order" type="button" data-order-id="${order.id}">
+          <span>
+            <strong>${escapeHtml(order.order_number)} · ${escapeHtml(order.customer_name)}</strong>
+            <small>${escapeHtml(formatPickup(order.pickup_date, order.pickup_window))}</small>
+            <span class="attention-badges">
+              ${issues.map(issue => `<span class="attention-badge ${issue.type}">${escapeHtml(issue.label)}</span>`).join("")}
+            </span>
+          </span>
+          <span>View order →</span>
+        </button>
+      `).join("")
+    : '<span class="panel-empty">Nothing needs attention for this pickup date.</span>';
+}
+
+function renderOperations() {
+  renderProduction();
+  renderAttention();
 }
 
 function renderReminders() {
@@ -92,16 +279,17 @@ function summarizeItems(items) {
 function renderStats() {
   // Only the statuses belonging to the visible tab, so the tiles stay useful.
   const statuses = STATUS_OPTIONS[activeTab].filter(([key]) => key);
+  const weekOrders = getWeekOrders();
 
   document.getElementById("stats").innerHTML = statuses.map(([key, label]) => `
     <div class="stat">
-      <strong>${orders.filter(order => order.status === key).length}</strong>
+      <strong>${weekOrders.filter(order => order.status === key).length}</strong>
       <span>${label}</span>
     </div>
   `).join("");
 
-  document.getElementById("countActive").textContent = orders.filter(o => !isDone(o)).length;
-  document.getElementById("countDone").textContent = orders.filter(isDone).length;
+  document.getElementById("countActive").textContent = weekOrders.filter(o => !isDone(o)).length;
+  document.getElementById("countDone").textContent = weekOrders.filter(isDone).length;
 }
 
 function renderStatusFilter(keepValue) {
@@ -137,7 +325,7 @@ function getFilteredOrders() {
   const searchValue = document.getElementById("searchInput").value.trim().toLowerCase();
   const sortValue = document.getElementById("sortOrder").value;
 
-  let filtered = orders.filter(inActiveTab);
+  let filtered = getWeekOrders().filter(inActiveTab);
   if (statusValue) filtered = filtered.filter(order => order.status === statusValue);
 
   if (searchValue) {
@@ -182,6 +370,7 @@ async function setStatus(order, next) {
 
   order.status = next;
   renderStats();
+  renderOperations();
   renderOrders();
 
   try {
@@ -194,6 +383,7 @@ async function setStatus(order, next) {
   } catch (error) {
     order.status = previous;
     renderStats();
+    renderOperations();
     renderOrders();
     alert(error.message);
   }
@@ -300,6 +490,31 @@ function renderOrders() {
   });
 }
 
+function focusOrder(id) {
+  const order = orders.find(item => String(item.id) === String(id));
+  if (!order) return;
+
+  activeTab = isDone(order) ? "done" : "active";
+  selectedIds.clear();
+  document.querySelectorAll(".tab").forEach(button => {
+    const on = button.dataset.tab === activeTab;
+    button.classList.toggle("active", on);
+    button.setAttribute("aria-selected", String(on));
+  });
+  renderStatusFilter("");
+  document.getElementById("searchInput").value = "";
+  renderStats();
+  renderOrders();
+
+  requestAnimationFrame(() => {
+    const card = document.querySelector(`.order-card[data-id="${CSS.escape(String(id))}"]`);
+    if (!card) return;
+    card.scrollIntoView({behavior: "smooth", block: "center"});
+    card.classList.add("is-focused");
+    window.setTimeout(() => card.classList.remove("is-focused"), 1700);
+  });
+}
+
 document.getElementById("selectAll").addEventListener("change", event => {
   const filtered = getFilteredOrders();
   filtered.forEach(order => {
@@ -338,6 +553,7 @@ document.getElementById("bulkApply").addEventListener("click", async () => {
   document.getElementById("bulkStatus").value = "";
   applyButton.disabled = false;
   renderStats();
+  renderOperations();
   renderOrders();
 
   if (failed) alert(`${failed} order${failed === 1 ? "" : "s"} could not be updated.`);
@@ -351,8 +567,10 @@ async function loadOrders(showLoading = true) {
     if (!response.ok) throw new Error("Could not load orders");
     const data = await response.json();
     orders = data.orders || [];
+    renderWeekOptions();
     renderStats();
     renderReminders();
+    renderOperations();
     renderOrders();
     document.getElementById("lastUpdated").textContent =
       `Updated ${new Intl.DateTimeFormat("en-US", {hour: "numeric", minute: "2-digit"}).format(new Date())}`;
@@ -379,6 +597,19 @@ document.getElementById("autoRefresh").addEventListener("change", event => {
 });
 
 document.getElementById("refresh").addEventListener("click", () => loadOrders());
+document.getElementById("weekFilter").addEventListener("change", event => {
+  selectedPickupDate = event.target.value;
+  selectedIds.clear();
+  renderWeekOptions();
+  renderStats();
+  renderOperations();
+  renderOrders();
+});
+document.getElementById("attentionList").addEventListener("click", event => {
+  const button = event.target.closest("[data-order-id]");
+  if (button) focusOrder(button.dataset.orderId);
+});
+document.getElementById("printProduction").addEventListener("click", () => window.print());
 document.getElementById("statusFilter").addEventListener("change", renderOrders);
 document.getElementById("searchInput").addEventListener("input", renderOrders);
 document.getElementById("sortOrder").addEventListener("change", renderOrders);
