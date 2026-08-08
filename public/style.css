@@ -591,8 +591,8 @@ h1{
   font-size:31px;
 }
 .drawer-head button{
-  width:40px;
-  height:40px;
+  width:44px;
+  height:44px;
   border:0;
   border-radius:50%;
   background:#eee5d8;
@@ -667,10 +667,35 @@ h1{
   border-radius:12px;
   background:white;
   color:var(--ink);
+  font:inherit;
+  font-size:16px;
 }
 .checkout textarea{
   min-height:74px;
   resize:vertical;
+}
+.payment-required{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:13px;
+  border:1px solid #b6dfca;
+  border-radius:14px;
+  background:#edf7f2;
+  color:#18593f;
+  font-size:12px;
+  line-height:1.45;
+}
+.payment-required svg{
+  width:24px;
+  height:24px;
+  flex:none;
+  fill:currentColor;
+}
+.payment-required strong{
+  display:block;
+  margin-bottom:2px;
+  font-size:13px;
 }
 .full{width:100%}
 .fine-print{

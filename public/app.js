@@ -506,7 +506,7 @@ function toast(message) {
   clearTimeout(window.rallyToastTimer);
   window.rallyToastTimer = setTimeout(() => {
     toastElement.classList.remove("show");
-  }, 1800);
+  }, 3200);
 }
 
 function buildTextMessage() {
@@ -546,13 +546,6 @@ document.getElementById("textOrder").addEventListener("click", () => {
   window.location.href = `sms:${BUSINESS_PHONE}?body=${encodeURIComponent(buildTextMessage())}`;
 });
 
-const confirmationOverlay = document.getElementById("confirmationOverlay");
-document.getElementById("closeConfirmation").addEventListener("click", () => {
-  confirmationOverlay.classList.remove("open");
-  confirmationOverlay.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
-});
-
 document.getElementById("checkoutForm").addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -583,7 +576,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
   const submitButton = document.getElementById("placeOrder");
   const originalButton = submitButton.innerHTML;
   submitButton.disabled = true;
-  submitButton.innerHTML = "<span>Saving order…</span><small>Please wait</small>";
+  submitButton.innerHTML = "<span>Preparing secure checkout…</span><small>Please wait</small>";
 
   try {
     const response = await fetch("/api/orders", {
@@ -595,6 +588,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
         pickupWindow: PICKUP_WINDOW,
         notes,
         website,
+        paymentRequired: true,
         items: cart.map(item => ({
           type: item.type,
           name: item.name,
@@ -612,28 +606,16 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
       throw new Error(result.error || "We could not save the order.");
     }
 
-    document.getElementById("confirmationNumber").textContent = result.orderNumber;
-    document.getElementById("confirmationPickup").textContent =
-      `${formatPickupDate(pickupDate)} • Details by text`;
-    document.getElementById("confirmationTotal").textContent = money(result.subtotal / 100);
-
-    const payLink = document.getElementById("confirmationPayLink");
-    if (result.squarePaymentLink) {
-      payLink.href = result.squarePaymentLink;
-      payLink.hidden = false;
-    } else {
-      payLink.hidden = true;
+    if (!result.paymentPath) {
+      throw new Error("Online payment is temporarily unavailable. Please text us for help.");
     }
 
     cart.splice(0, cart.length);
     localStorage.removeItem(CART_KEY);
+    sessionStorage.setItem("rallyPendingPayment", result.paymentPath);
     renderCart();
     event.target.reset();
-    closeCart();
-
-    confirmationOverlay.classList.add("open");
-    confirmationOverlay.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
+    window.location.assign(result.paymentPath);
   } catch (error) {
     console.error(error);
     toast(`${error.message} You can use the text option below.`);
@@ -645,7 +627,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js?v=8").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js?v=9").catch(() => {});
   });
 }
 

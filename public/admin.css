@@ -129,6 +129,7 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
 }
 .payment-badge.paid{background:#e3f5eb;color:#17734c}
 .payment-badge.pending{background:#f0e7d9;color:var(--muted)}
+.payment-badge.failed{background:#feecee;color:#a81824}
 .customer-grid{
   display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:14px 0
 }

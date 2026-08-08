@@ -1,10 +1,10 @@
-const CACHE_NAME = "rally-point-v8";
+const CACHE_NAME = "rally-point-v9";
 const ASSETS = [
   "/",
   "/index.html",
-  "/style.css?v=8",
-  "/app.js?v=8",
-  "/manifest.json?v=8",
+  "/style.css?v=9",
+  "/app.js?v=9",
+  "/manifest.json?v=9",
   "/images/brand-card.jpg",
   "/images/icon-192.png",
   "/images/icon-512.png",
@@ -31,7 +31,8 @@ self.addEventListener("fetch", event => {
   if (
     event.request.method !== "GET" ||
     url.pathname.startsWith("/api/") ||
-    url.pathname.startsWith("/admin")
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/pay")
   ) {
     return;
   }

@@ -214,12 +214,21 @@ function renderOrders() {
     fragment.querySelector(".notes").textContent = order.notes || "No notes";
 
     const paymentBadge = fragment.querySelector(".payment-badge");
-    if (order.square_payment_link) {
-      paymentBadge.textContent = "Prepay link sent ↗";
-      paymentBadge.href = order.square_payment_link;
+    if (order.payment_status === "COMPLETED") {
+      paymentBadge.textContent = order.square_receipt_url ? "Paid online · receipt ↗" : "Paid online";
+      if (order.square_receipt_url) paymentBadge.href = order.square_receipt_url;
+      else paymentBadge.removeAttribute("href");
       paymentBadge.classList.add("paid");
+    } else if (order.payment_status === "PROCESSING") {
+      paymentBadge.textContent = "Payment processing";
+      paymentBadge.removeAttribute("href");
+      paymentBadge.classList.add("pending");
+    } else if (order.payment_status === "FAILED") {
+      paymentBadge.textContent = "Payment failed";
+      paymentBadge.removeAttribute("href");
+      paymentBadge.classList.add("failed");
     } else {
-      paymentBadge.textContent = "Pay at pickup";
+      paymentBadge.textContent = "Awaiting online payment";
       paymentBadge.removeAttribute("href");
       paymentBadge.classList.add("pending");
     }

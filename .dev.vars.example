@@ -1,0 +1,6 @@
+# Copy this file to .dev.vars for local Square Sandbox testing.
+# Never commit .dev.vars or production credentials.
+SQUARE_APPLICATION_ID=sandbox-sq0idb-your-application-id
+SQUARE_ACCESS_TOKEN=your-sandbox-access-token
+SQUARE_LOCATION_ID=your-sandbox-location-id
+SQUARE_ENVIRONMENT=sandbox

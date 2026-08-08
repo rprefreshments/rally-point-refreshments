@@ -39,9 +39,9 @@
     }
   }
   </script>
-  <link rel="manifest" href="/manifest.json?v=8">
+  <link rel="manifest" href="/manifest.json?v=9">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=8">
+  <link rel="stylesheet" href="/style.css?v=9">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
@@ -324,8 +324,8 @@
             </svg>
           </span>
           <div>
-            <strong>Pay at pickup</strong>
-            <span>No online payment is required to reserve your order.</span>
+            <strong>Pay by card</strong>
+            <span>Pay securely by card right on our site through Square.</span>
           </div>
         </article>
       </div>
@@ -429,14 +429,24 @@
           <textarea id="notes" name="notes" maxlength="500" placeholder="Allergies or special requests"></textarea>
         </label>
 
+        <div class="payment-required" aria-label="Online payment information">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 5 6v5c0 4.7 2.9 8.8 7 10 4.1-1.2 7-5.3 7-10V6l-7-3Zm0 2.2 5 2.1V11c0 3.6-2 6.8-5 8-3-1.2-5-4.4-5-8V7.3l5-2.1Zm-1 4.3v1.6H9.5v2H11v1.6h2v-1.6h1.5v-2H13V9.5h-2Z"/>
+          </svg>
+          <span>
+            <strong>Secure online payment</strong>
+            Your card is entered on the next screen and processed by Square.
+          </span>
+        </div>
+
         <label class="honeypot" aria-hidden="true">
           Website
           <input id="website" name="website" tabindex="-1" autocomplete="off">
         </label>
 
         <button class="primary full place-order" id="placeOrder" type="submit">
-          <span>Place order</span>
-          <small>Pay at pickup</small>
+          <span>Continue to payment</span>
+          <small>Secure card checkout</small>
         </button>
 
         <button class="text-fallback" id="textOrder" type="button">Having trouble? Text the order instead</button>
@@ -460,33 +470,8 @@
     </section>
   </div>
 
-  <div class="confirmation-overlay" id="confirmationOverlay" aria-hidden="true">
-    <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle">
-      <div class="confirmation-check">✓</div>
-      <p class="eyebrow dark">Order received</p>
-      <h2 id="confirmationTitle">You’re on the list.</h2>
-      <p>Your confirmation number is:</p>
-      <strong class="confirmation-number" id="confirmationNumber">RP-0000</strong>
-
-      <div class="confirmation-details">
-        <span id="confirmationPickup">Saturday pickup</span>
-        <strong id="confirmationTotal">$0</strong>
-      </div>
-
-      <p class="confirmation-copy">
-        We saved your order and will text you with the exact pickup details.
-      </p>
-
-      <a class="confirmation-pay" id="confirmationPayLink" href="#" target="_blank" rel="noopener" hidden>
-        Pay now with card
-      </a>
-
-      <button class="primary full" id="closeConfirmation" type="button">Done</button>
-    </section>
-  </div>
-
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=8"></script>
+  <script src="/app.js?v=9"></script>
 </body>
 </html>

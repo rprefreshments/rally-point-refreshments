@@ -14,6 +14,7 @@ const BONUS_PRICE_BY_PACK = new Map([[3, 500], [6, 400]]);
 const DEFAULT_PICKUP_WINDOW = "Details confirmed by text";
 const ALLOWED_WINDOWS = new Set(["Morning", "Afternoon", "Evening", DEFAULT_PICKUP_WINDOW]);
 const ALLOWED_STATUSES = new Set(["new", "confirmed", "preparing", "ready", "picked_up", "cancelled"]);
+const SQUARE_API_VERSION = "2026-07-15";
 
 export default {
   async fetch(request, env, ctx) {
@@ -25,6 +26,24 @@ export default {
           return json({ok: false, error: "Too many orders from this connection. Please wait a few minutes and try again, or text us instead."}, 429);
         }
         return await createOrder(request, env, ctx);
+      }
+
+      if (url.pathname === "/api/square/config" && request.method === "GET") {
+        return squareConfig(env);
+      }
+
+      if (url.pathname === "/api/payments/order-summary" && request.method === "POST") {
+        if (isRateLimited(request, "payment-summary", 30)) {
+          return json({ok: false, error: "Too many payment requests. Please wait a moment and try again."}, 429);
+        }
+        return await getPaymentOrderSummary(request, env);
+      }
+
+      if (url.pathname === "/api/payments" && request.method === "POST") {
+        if (isRateLimited(request, "payment", 12)) {
+          return json({ok: false, error: "Too many payment attempts. Please wait a few minutes and try again."}, 429);
+        }
+        return await createSquarePayment(request, env, ctx);
       }
 
       if (url.pathname === "/api/orders" && request.method === "GET") {
@@ -46,6 +65,12 @@ export default {
 
         const adminUrl = new URL("/admin.html", url.origin);
         return env.ASSETS.fetch(adminUrl);
+      }
+
+      if (url.pathname === "/pay" || url.pathname === "/pay/" || url.pathname === "/pay.html") {
+        const payUrl = new URL("/pay.html", url.origin);
+        const response = await env.ASSETS.fetch(payUrl);
+        return withPaymentSecurityHeaders(response);
       }
 
       return env.ASSETS.fetch(request);
@@ -78,7 +103,14 @@ async function ensureDatabase(env) {
         bottle_count INTEGER NOT NULL,
         items_json TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'new',
-        square_payment_link TEXT
+        square_payment_link TEXT,
+        payment_access_hash TEXT,
+        payment_status TEXT NOT NULL DEFAULT 'UNPAID',
+        payment_attempt INTEGER NOT NULL DEFAULT 0,
+        payment_updated_at TEXT,
+        square_payment_id TEXT,
+        square_receipt_url TEXT,
+        paid_at TEXT
       )
     `),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`),
@@ -91,6 +123,24 @@ async function ensureDatabase(env) {
     if (!String(error.message || error).toLowerCase().includes("duplicate column")) throw error;
   }
 
+  const paymentColumns = [
+    "payment_access_hash TEXT",
+    "payment_status TEXT NOT NULL DEFAULT 'UNPAID'",
+    "payment_attempt INTEGER NOT NULL DEFAULT 0",
+    "payment_updated_at TEXT",
+    "square_payment_id TEXT",
+    "square_receipt_url TEXT",
+    "paid_at TEXT"
+  ];
+
+  for (const column of paymentColumns) {
+    try {
+      await env.DB.prepare(`ALTER TABLE orders ADD COLUMN ${column}`).run();
+    } catch (error) {
+      if (!String(error.message || error).toLowerCase().includes("duplicate column")) throw error;
+    }
+  }
+
   schemaReady = true;
 }
 
@@ -98,22 +148,23 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const RATE_LIMIT_MAX = 5;
 const rateLimitState = new Map();
 
-function isRateLimited(request) {
+function isRateLimited(request, bucket = "orders", maxRequests = RATE_LIMIT_MAX) {
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const key = `${bucket}:${ip}`;
   const now = Date.now();
   const windowStart = now - RATE_LIMIT_WINDOW_MS;
 
   if (rateLimitState.size > 10_000) rateLimitState.clear();
 
-  const timestamps = (rateLimitState.get(ip) || []).filter(ts => ts > windowStart);
+  const timestamps = (rateLimitState.get(key) || []).filter(ts => ts > windowStart);
 
-  if (timestamps.length >= RATE_LIMIT_MAX) {
-    rateLimitState.set(ip, timestamps);
+  if (timestamps.length >= maxRequests) {
+    rateLimitState.set(key, timestamps);
     return true;
   }
 
   timestamps.push(now);
-  rateLimitState.set(ip, timestamps);
+  rateLimitState.set(key, timestamps);
   return false;
 }
 
@@ -164,6 +215,10 @@ async function createOrder(request, env, ctx) {
     return json({ok: true, orderNumber: "RP-RECEIVED", subtotal: 0}, 200);
   }
 
+  if (body.paymentRequired === true && !squareIsConfigured(env)) {
+    return json({ok: false, error: "Online card payment is temporarily unavailable. Please text us for help."}, 503);
+  }
+
   const customer = body.customer || {};
   const customerName = clean(customer.name, 80);
   const customerPhone = clean(customer.phone, 24);
@@ -193,6 +248,8 @@ async function createOrder(request, env, ctx) {
   await ensureDatabase(env);
 
   const createdAt = new Date().toISOString();
+  const paymentAccessToken = makePaymentAccessToken();
+  const paymentAccessHash = await hashPaymentAccessToken(paymentAccessToken);
   let orderNumber = "";
   let inserted = false;
 
@@ -203,8 +260,9 @@ async function createOrder(request, env, ctx) {
       await env.DB.prepare(`
         INSERT INTO orders (
           order_number, created_at, customer_name, customer_phone, customer_email,
-          pickup_date, pickup_window, notes, subtotal_cents, bottle_count, items_json, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new')
+          pickup_date, pickup_window, notes, subtotal_cents, bottle_count, items_json, status,
+          payment_access_hash, payment_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, 'UNPAID')
       `).bind(
         orderNumber,
         createdAt,
@@ -216,7 +274,8 @@ async function createOrder(request, env, ctx) {
         notes || null,
         parsed.subtotal,
         parsed.bottleCount,
-        JSON.stringify(parsed.items)
+        JSON.stringify(parsed.items),
+        paymentAccessHash
       ).run();
       inserted = true;
     } catch (error) {
@@ -226,31 +285,9 @@ async function createOrder(request, env, ctx) {
 
   if (!inserted) throw new Error("Could not create a unique order number.");
 
-  const squarePaymentLink = await createSquarePaymentLink(env, orderNumber, parsed.subtotal);
-
-  if (squarePaymentLink) {
-    await env.DB.prepare(`UPDATE orders SET square_payment_link = ? WHERE order_number = ?`)
-      .bind(squarePaymentLink, orderNumber)
-      .run();
-  }
-
-  if (env.RESEND_API_KEY && env.ORDER_EMAIL && env.EMAIL_FROM) {
-    ctx.waitUntil(sendOrderEmails(env, {
-      orderNumber,
-      createdAt,
-      customerName,
-      customerPhone,
-      customerEmail,
-      pickupDate,
-      pickupWindow,
-      notes,
-      subtotal: parsed.subtotal,
-      bottleCount: parsed.bottleCount,
-      items: parsed.items,
-      squarePaymentLink
-    }));
-  }
-
+  const paymentPath = squareIsConfigured(env)
+    ? makePaymentPath(orderNumber, paymentAccessToken)
+    : null;
   return json({
     ok: true,
     orderNumber,
@@ -258,7 +295,8 @@ async function createOrder(request, env, ctx) {
     bottleCount: parsed.bottleCount,
     pickupDate,
     pickupWindow,
-    squarePaymentLink
+    paymentPath,
+    paymentAvailable: Boolean(paymentPath)
   }, 201);
 }
 
@@ -419,42 +457,258 @@ function constantTimeEqual(a, b) {
   return mismatch === 0;
 }
 
-async function createSquarePaymentLink(env, orderNumber, subtotalCents) {
-  if (!env.SQUARE_ACCESS_TOKEN || !env.SQUARE_LOCATION_ID) return null;
+function squareIsConfigured(env) {
+  return Boolean(env.SQUARE_APPLICATION_ID && env.SQUARE_ACCESS_TOKEN && env.SQUARE_LOCATION_ID);
+}
+
+function squareConfig(env) {
+  if (!squareIsConfigured(env)) {
+    return json({ok: true, enabled: false});
+  }
+
+  return json({
+    ok: true,
+    enabled: true,
+    applicationId: env.SQUARE_APPLICATION_ID,
+    locationId: env.SQUARE_LOCATION_ID,
+    environment: env.SQUARE_ENVIRONMENT === "sandbox" ? "sandbox" : "production"
+  });
+}
+
+function makePaymentPath(orderNumber, accessToken) {
+  const params = new URLSearchParams({order: orderNumber, token: accessToken});
+  return `/pay#${params}`;
+}
+
+function makePaymentAccessToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function hashPaymentAccessToken(token) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function readPaymentRequest(request) {
+  const payload = await readLimitedJson(request, 12_000);
+  if (payload.tooLarge) return {error: json({ok: false, error: "Payment request is too large."}, 413)};
+
+  const body = payload.body;
+  const orderNumber = clean(body?.orderNumber, 40);
+  const accessToken = clean(body?.accessToken, 100);
+  if (!/^RP-[A-Z0-9-]+$/.test(orderNumber) || accessToken.length < 24) {
+    return {error: json({ok: false, error: "This payment link is invalid."}, 400)};
+  }
+
+  return {body, orderNumber, accessHash: await hashPaymentAccessToken(accessToken)};
+}
+
+async function getPaymentOrderSummary(request, env) {
+  const parsed = await readPaymentRequest(request);
+  if (parsed.error) return parsed.error;
+
+  await ensureDatabase(env);
+  const order = await env.DB.prepare(`
+    SELECT order_number, customer_name, customer_phone, customer_email, pickup_date,
+      pickup_window, subtotal_cents, bottle_count, payment_status, square_receipt_url
+    FROM orders WHERE order_number = ? AND payment_access_hash = ?
+  `).bind(parsed.orderNumber, parsed.accessHash).first();
+
+  if (!order) return json({ok: false, error: "This payment link is invalid or has expired."}, 404);
+
+  const nameParts = String(order.customer_name || "").trim().split(/\s+/);
+  return json({
+    ok: true,
+    order: {
+      orderNumber: order.order_number,
+      amountCents: order.subtotal_cents,
+      bottleCount: order.bottle_count,
+      pickupDate: order.pickup_date,
+      pickupWindow: order.pickup_window,
+      paymentStatus: order.payment_status || "UNPAID",
+      receiptUrl: order.square_receipt_url || null,
+      customer: {
+        givenName: nameParts.shift() || "Customer",
+        familyName: nameParts.join(" "),
+        email: order.customer_email || "",
+        phone: order.customer_phone || "",
+        countryCode: "US"
+      }
+    }
+  });
+}
+
+async function createSquarePayment(request, env, ctx) {
+  if (!squareIsConfigured(env)) {
+    return json({ok: false, error: "Online card payment is temporarily unavailable. Please text us for help."}, 503);
+  }
+
+  const parsed = await readPaymentRequest(request);
+  if (parsed.error) return parsed.error;
+  const sourceId = clean(parsed.body?.sourceId, 512);
+  if (!sourceId) return json({ok: false, error: "Card details could not be verified. Please try again."}, 400);
+
+  await ensureDatabase(env);
+  const existing = await env.DB.prepare(`
+    SELECT * FROM orders WHERE order_number = ? AND payment_access_hash = ?
+  `).bind(parsed.orderNumber, parsed.accessHash).first();
+
+  if (!existing) return json({ok: false, error: "This payment link is invalid or has expired."}, 404);
+  if (existing.payment_status === "COMPLETED") {
+    return json({ok: true, paymentStatus: "COMPLETED", receiptUrl: existing.square_receipt_url || null});
+  }
+  if (existing.payment_status === "PROCESSING") {
+    return json({
+      ok: false,
+      error: "Square is still confirming this payment. Please do not submit it again. Check your email, or text us if it does not update shortly."
+    }, 409);
+  }
+
+  const now = new Date();
+  const claimed = await env.DB.prepare(`
+    UPDATE orders
+    SET payment_status = 'PROCESSING',
+        payment_attempt = COALESCE(payment_attempt, 0) + 1,
+        payment_updated_at = ?
+    WHERE order_number = ? AND payment_access_hash = ?
+      AND (
+        payment_status IS NULL OR payment_status IN ('UNPAID', 'FAILED')
+      )
+    RETURNING *
+  `).bind(now.toISOString(), parsed.orderNumber, parsed.accessHash).first();
+
+  if (!claimed) {
+    return json({ok: false, error: "This payment is already being processed. Please wait a moment before trying again."}, 409);
+  }
 
   const base = env.SQUARE_ENVIRONMENT === "sandbox"
     ? "https://connect.squareupsandbox.com"
     : "https://connect.squareup.com";
+  const idempotencyKey = `${claimed.order_number}-${claimed.payment_attempt}`.slice(0, 45);
 
+  let squareResponse;
+  let squareData;
   try {
-    const response = await fetch(`${base}/v2/online-checkout/payment-links`, {
+    squareResponse = await fetch(`${base}/v2/payments`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${env.SQUARE_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
-        "Square-Version": "2024-10-17"
+        "Square-Version": SQUARE_API_VERSION
       },
       body: JSON.stringify({
-        idempotency_key: `${orderNumber}-square`,
-        quick_pay: {
-          name: `Rally Point order ${orderNumber}`,
-          price_money: {amount: subtotalCents, currency: "USD"},
-          location_id: env.SQUARE_LOCATION_ID
-        }
+        source_id: sourceId,
+        idempotency_key: idempotencyKey,
+        amount_money: {amount: claimed.subtotal_cents, currency: "USD"},
+        autocomplete: true,
+        location_id: env.SQUARE_LOCATION_ID,
+        reference_id: claimed.order_number,
+        note: `Rally Point website order ${claimed.order_number}`,
+        ...(claimed.customer_email ? {buyer_email_address: claimed.customer_email} : {})
       })
     });
-
-    if (!response.ok) {
-      console.error("Square payment link failed", response.status, await response.text());
-      return null;
-    }
-
-    const data = await response.json();
-    return data.payment_link?.url || null;
+    squareData = await squareResponse.json().catch(() => ({}));
   } catch (error) {
-    console.error("Square payment link request failed", error);
-    return null;
+    console.error("Square payment request failed", error);
+    return json({
+      ok: false,
+      error: "Square did not confirm whether the payment completed. Please do not submit it again. Check your email, or text us for help."
+    }, 502);
   }
+
+  if (!squareResponse.ok || !squareData.payment) {
+    console.error("Square payment failed", squareResponse.status, JSON.stringify(squareData.errors || []));
+    await markPaymentFailed(env, claimed);
+    return json({ok: false, error: friendlySquareError(squareData.errors)}, 402);
+  }
+
+  const payment = squareData.payment;
+  const paymentStatus = payment.status === "COMPLETED" ? "COMPLETED" : "FAILED";
+  const paidAt = paymentStatus === "COMPLETED" ? (payment.updated_at || new Date().toISOString()) : null;
+
+  await env.DB.prepare(`
+    UPDATE orders SET payment_status = ?, payment_updated_at = ?, square_payment_id = ?,
+      square_receipt_url = ?, paid_at = ?
+    WHERE id = ? AND payment_attempt = ?
+  `).bind(
+    paymentStatus,
+    new Date().toISOString(),
+    payment.id || null,
+    payment.receipt_url || null,
+    paidAt,
+    claimed.id,
+    claimed.payment_attempt
+  ).run();
+
+  if (paymentStatus !== "COMPLETED") {
+    return json({ok: false, error: "Square did not complete the payment. Please try another card."}, 402);
+  }
+
+  if (env.RESEND_API_KEY && env.ORDER_EMAIL && env.EMAIL_FROM) {
+    ctx.waitUntil(sendOrderEmails(env, {
+      orderNumber: claimed.order_number,
+      createdAt: claimed.created_at,
+      customerName: claimed.customer_name,
+      customerPhone: claimed.customer_phone,
+      customerEmail: claimed.customer_email || "",
+      pickupDate: claimed.pickup_date,
+      pickupWindow: claimed.pickup_window,
+      notes: claimed.notes || "",
+      subtotal: claimed.subtotal_cents,
+      bottleCount: claimed.bottle_count,
+      items: safeParseItems(claimed.items_json),
+      paymentStatus,
+      receiptUrl: payment.receipt_url || null
+    }));
+  }
+
+  return json({ok: true, paymentStatus, receiptUrl: payment.receipt_url || null});
+}
+
+async function markPaymentFailed(env, order) {
+  await env.DB.prepare(`
+    UPDATE orders SET payment_status = 'FAILED', payment_updated_at = ?
+    WHERE id = ? AND payment_attempt = ?
+  `).bind(new Date().toISOString(), order.id, order.payment_attempt).run();
+}
+
+function friendlySquareError(errors) {
+  const code = errors?.[0]?.code || "";
+  const messages = {
+    CARD_DECLINED: "That card was declined. Please try another card or contact your bank.",
+    CVV_FAILURE: "The security code did not match. Please check it and try again.",
+    ADDRESS_VERIFICATION_FAILURE: "The billing ZIP code did not match. Please check it and try again.",
+    INVALID_EXPIRATION: "The expiration date is invalid. Please check it and try again.",
+    INSUFFICIENT_FUNDS: "That card has insufficient funds. Please try another card.",
+    GENERIC_DECLINE: "That card was declined. Please try another card or contact your bank.",
+    CARD_TOKEN_EXPIRED: "The secure card session expired. Please enter the card again."
+  };
+  return messages[code] || "Square could not complete the payment. Please check the card details or try another card.";
+}
+
+function withPaymentSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set("Content-Security-Policy", [
+    "default-src 'self'",
+    "script-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+    "frame-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+    "connect-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com https://pci-connect.squareup.com https://pci-connect.squareupsandbox.com https://o160250.ingest.sentry.io",
+    "style-src 'self' 'unsafe-inline' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
+    "font-src 'self' data: https://square-fonts-production-f.squarecdn.com https://d1g145x70srn7h.cloudfront.net",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "upgrade-insecure-requests"
+  ].join("; "));
+  headers.set("Referrer-Policy", "no-referrer");
+  headers.set("X-Content-Type-Options", "nosniff");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  return new Response(response.body, {status: response.status, statusText: response.statusText, headers});
 }
 
 async function sendOrderEmails(env, order) {
@@ -513,7 +767,8 @@ async function sendOrderEmails(env, order) {
     `Pickup: ${pickupLabel}`,
     `Bottles: ${order.bottleCount}`,
     `Total: ${total}`,
-    order.squarePaymentLink ? `Prepay link sent to customer: ${order.squarePaymentLink}` : "",
+    "Payment: Paid online by card through Square",
+    order.receiptUrl ? `Square receipt: ${order.receiptUrl}` : "",
     "",
     itemText,
     "",
@@ -534,6 +789,7 @@ async function sendOrderEmails(env, order) {
       <tr><td style="padding:7px 0;color:#6b7280">Pickup</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(pickupLabel)}</td></tr>
       <tr><td style="padding:7px 0;color:#6b7280">Bottles</td><td style="padding:7px 0;text-align:right;font-weight:700">${order.bottleCount}</td></tr>
       <tr><td style="padding:7px 0;color:#6b7280">Total</td><td style="padding:7px 0;text-align:right;font-size:20px;font-weight:800">${total}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Payment</td><td style="padding:7px 0;text-align:right;color:#17734c;font-weight:800">Paid online</td></tr>
     </table>
 
     <div style="padding:16px;border-radius:12px;background:#f5ecdd">
@@ -543,8 +799,8 @@ async function sendOrderEmails(env, order) {
 
     <p style="margin:18px 0;color:#4b5563"><strong>Notes:</strong> ${escapeHtml(order.notes || "No notes")}</p>
 
-    ${order.squarePaymentLink ? `
-      <p style="margin:0 0 18px;color:#4b5563">Prepay link sent to the customer: <a href="${escapeHtml(order.squarePaymentLink)}">${escapeHtml(order.squarePaymentLink)}</a></p>
+    ${order.receiptUrl ? `
+      <p style="margin:0 0 18px;color:#4b5563">Square receipt: <a href="${escapeHtml(order.receiptUrl)}">View receipt</a></p>
     ` : ""}
 
     <a href="${adminUrl}" style="display:inline-block;padding:13px 18px;border-radius:10px;background:#06182f;color:#ffffff;font-weight:800;text-decoration:none">
@@ -569,8 +825,8 @@ async function sendOrderEmails(env, order) {
       "",
       `Confirmation: ${order.orderNumber}`,
       `Pickup: ${pickupLabel}`,
-      `Total due at pickup: ${total}`,
-      order.squarePaymentLink ? `Prefer to pay now instead? ${order.squarePaymentLink}` : "",
+      `Paid online: ${total}`,
+      order.receiptUrl ? `Square receipt: ${order.receiptUrl}` : "",
       "",
       itemText,
       "",
@@ -592,7 +848,7 @@ async function sendOrderEmails(env, order) {
 
       <table role="presentation" style="width:100%;border-collapse:collapse;margin-bottom:20px">
         <tr><td style="padding:7px 0;color:#6b7280">Pickup</td><td style="padding:7px 0;text-align:right;font-weight:700">${escapeHtml(pickupLabel)}</td></tr>
-        <tr><td style="padding:7px 0;color:#6b7280">Total due at pickup</td><td style="padding:7px 0;text-align:right;font-size:20px;font-weight:800">${total}</td></tr>
+        <tr><td style="padding:7px 0;color:#6b7280">Paid online</td><td style="padding:7px 0;text-align:right;color:#17734c;font-size:20px;font-weight:800">${total}</td></tr>
       </table>
 
       <div style="padding:16px;border:1px solid #e7dac8;border-radius:12px">
@@ -600,10 +856,10 @@ async function sendOrderEmails(env, order) {
         <ul style="margin:10px 0 0;padding-left:20px">${itemHtml}</ul>
       </div>
 
-      ${order.squarePaymentLink ? `
+      ${order.receiptUrl ? `
         <div style="margin-top:20px;text-align:center">
-          <a href="${escapeHtml(order.squarePaymentLink)}" style="display:inline-block;padding:13px 22px;border-radius:10px;border:2px solid #06182f;color:#06182f;font-weight:800;text-decoration:none">
-            Pay now with card
+          <a href="${escapeHtml(order.receiptUrl)}" style="display:inline-block;padding:13px 22px;border-radius:10px;border:2px solid #06182f;color:#06182f;font-weight:800;text-decoration:none">
+            View Square receipt
           </a>
         </div>
       ` : ""}

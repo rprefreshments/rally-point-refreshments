@@ -9,7 +9,9 @@ This version includes a real order system plus quick customer texting and automa
 - Status tracking
 - Text ordering fallback
 - Optional email notifications through Resend
-- Optional "Pay now with card" prepay links through Square
+- Required online card checkout through Square
+- Embedded secure card-entry page at `/pay`
+- Square payment status and receipt links in the private dashboard
 
 ## Deploy
 
@@ -73,30 +75,44 @@ For instant email alerts and optional customer receipts:
 
 The code automatically sends the business a new-order email when the secret is configured.
 
-## Optional Square prepay links
+## Square online card checkout
 
-Orders still default to "pay at pickup" — this only adds an *optional* way for a customer to pay ahead of time by card. It's separate from the Square point-of-sale app you use in person; it needs its own API access.
+Normal website checkout now requires online card payment. After the customer enters their order details, the site opens Rally Point's own `/pay` page. Square's Web Payments SDK renders the secure card fields, creates a one-time payment token, and the Worker charges the exact server-calculated order total through Square's Payments API.
 
-1. Go to [developer.squareup.com/apps](https://developer.squareup.com/apps) and sign in with your normal Square account.
-2. Click **+ Create App**, give it any name (e.g. "Rally Point Website"), and open it.
-3. On the app's **Credentials** page:
-   - Copy the **Production Access Token** (or use the **Sandbox Access Token** first if you want to test with fake payments before going live — see step 6).
-   - Note the **Location ID** for your business under **Locations** (same page, or under your main Square Dashboard → Account & Settings → Locations).
-4. In Cloudflare: **Workers & Pages → rally-point-refreshments → Settings → Variables and Secrets**, add two encrypted secrets:
+The payment uses the Square business location selected by `SQUARE_LOCATION_ID`, so completed website transactions appear in the same Square account used for the business. Rally Point's site never receives or stores raw card numbers.
 
-   - `SQUARE_ACCESS_TOKEN` — the access token from step 3
-   - `SQUARE_LOCATION_ID` — the location ID from step 3
+### Test safely in Square Sandbox first
 
-5. Redeploy (or it will apply on the next deploy). Once both secrets are set, every new order automatically gets its own Square payment link for the exact order total. It appears as a "Pay now with card" button on the order confirmation screen and in both the customer and business emails.
-6. **To test safely first:** use your *Sandbox* Access Token and Location ID instead of production ones, and also add a third secret `SQUARE_ENVIRONMENT` set to `sandbox`. Sandbox payment links don't move real money. When you're ready to go live, swap in the production Access Token/Location ID and remove the `SQUARE_ENVIRONMENT` secret (or set it to `production`).
+1. Go to [developer.squareup.com/apps](https://developer.squareup.com/apps), sign in with the Square business account, and create or open the **Rally Point Website** application.
+2. Switch the Developer Console to **Sandbox** and copy all three matching Sandbox values:
+   - Application ID
+   - Access Token
+   - Location ID
+3. In Cloudflare, open **Workers & Pages → rally-point-refreshments → Settings → Variables and Secrets**.
+4. Add these values:
+   - `SQUARE_APPLICATION_ID` — Sandbox Application ID (plain variable is acceptable)
+   - `SQUARE_ACCESS_TOKEN` — Sandbox Access Token (**encrypted secret**)
+   - `SQUARE_LOCATION_ID` — Sandbox Location ID
+   - `SQUARE_ENVIRONMENT` — `sandbox`
+5. Redeploy and place a test order. Use Square's Sandbox card `4111 1111 1111 1111`, CVV `111`, any future expiration date, and ZIP `27536`.
+6. Confirm the payment succeeds, the order dashboard says **Paid online**, and its Square receipt opens.
 
-If these secrets aren't set, the site works exactly as before — no payment link is generated and customers just see "pay at pickup."
+### Switch to live payments
+
+1. In the same Square application, switch the Developer Console to **Production**.
+2. Replace all three Square values in Cloudflare with the matching Production Application ID, Production Access Token, and Production Location ID.
+3. Set `SQUARE_ENVIRONMENT` to `production` or remove it.
+4. Redeploy, then make one small real purchase and refund it from Square if desired.
+
+Do not mix Sandbox and Production credentials. Checkout intentionally stops before creating an order when the Square configuration is incomplete.
 
 ## Security notes
 
 - Prices are recalculated by the Worker; the browser cannot choose its own total.
 - The admin dashboard and order API require the admin password.
-- Do not put `ADMIN_PASSWORD`, `RESEND_API_KEY`, or `SQUARE_ACCESS_TOKEN` in GitHub.
+- Do not put `ADMIN_PASSWORD`, `RESEND_API_KEY`, `SQUARE_ACCESS_TOKEN`, or `.dev.vars` in GitHub.
+- Payment access links use a random secret in the URL fragment; only a SHA-256 hash is stored in D1.
+- The payment page sends a strict Content Security Policy required by Square's Web Payments SDK.
 
 
 ## Text and email setup

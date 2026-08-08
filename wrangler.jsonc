@@ -12,7 +12,10 @@
       "/api/*",
       "/admin",
       "/admin/*",
-      "/admin.html"
+      "/admin.html",
+      "/pay",
+      "/pay/*",
+      "/pay.html"
     ]
   },
   "d1_databases": [
