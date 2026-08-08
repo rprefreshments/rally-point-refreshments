@@ -159,3 +159,76 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
   .orders{grid-template-columns:repeat(2,1fr)}
   .customer-grid{grid-template-columns:repeat(4,1fr)}
 }
+/* Coffee Club and fulfillment preferences */
+.reminder-panel{
+  margin:18px 0;
+  padding:20px;
+  border:1px solid #d9c69e;
+  border-radius:18px;
+  background:linear-gradient(135deg,#fffaf0,#f6e7c9);
+  box-shadow:0 10px 28px rgba(6,24,47,.08);
+}
+.reminder-head{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:flex-start;
+}
+.reminder-head small{
+  color:#b31c27;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.reminder-head h2{margin:3px 0 4px;color:#06182f;font-size:23px}
+.reminder-head p{max-width:620px;margin:0;color:#667085;font-size:13px}
+.reminder-head>strong{
+  flex:none;
+  padding:7px 11px;
+  border-radius:999px;
+  background:#06182f;
+  color:#fff;
+  font-size:12px;
+}
+.reminder-list{display:grid;gap:8px;margin-top:16px}
+.reminder-member{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:center;
+  padding:11px 12px;
+  border:1px solid #e5d8bc;
+  border-radius:12px;
+  background:#fff;
+}
+.reminder-member span strong,.reminder-member span small{display:block}
+.reminder-member span strong{color:#06182f;font-size:13px}
+.reminder-member span small{margin-top:2px;color:#667085;font-size:11px}
+.reminder-member a{
+  min-height:40px;
+  display:inline-flex;
+  align-items:center;
+  padding:8px 12px;
+  border-radius:10px;
+  background:#b31c27;
+  color:#fff;
+  font-size:12px;
+  font-weight:850;
+  text-decoration:none;
+}
+.reminder-empty{color:#667085;font-size:13px}
+.preference-badges{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 2px}
+.preference{
+  padding:5px 9px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:850;
+}
+.preference.delivery{background:#fff2d8;color:#7b4a00}
+.preference.club{background:#e7f4ff;color:#175b8b}
+@media(max-width:620px){
+  .reminder-head{display:grid}
+  .reminder-head>strong{justify-self:start}
+  .reminder-member{align-items:flex-start;flex-direction:column}
+  .reminder-member a{width:100%;justify-content:center}
+}

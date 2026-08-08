@@ -11,8 +11,8 @@ const CATALOG = new Map([
 // Each pack unlocks one discounted add-on bottle, priced by the pack it came with.
 const BONUS_PRICE_BY_PACK = new Map([[3, 500], [6, 400]]);
 
-const DEFAULT_PICKUP_WINDOW = "Details confirmed by text";
-const ALLOWED_WINDOWS = new Set(["Morning", "Afternoon", "Evening", DEFAULT_PICKUP_WINDOW]);
+const DEFAULT_PICKUP_WINDOW = "10 AM in Henderson";
+const ALLOWED_WINDOWS = new Set(["Details confirmed by text", DEFAULT_PICKUP_WINDOW]);
 const ALLOWED_STATUSES = new Set(["new", "confirmed", "preparing", "ready", "picked_up", "cancelled"]);
 const SQUARE_API_VERSION = "2026-07-15";
 
@@ -110,7 +110,9 @@ async function ensureDatabase(env) {
         payment_updated_at TEXT,
         square_payment_id TEXT,
         square_receipt_url TEXT,
-        paid_at TEXT
+        paid_at TEXT,
+        delivery_interest INTEGER NOT NULL DEFAULT 0,
+        coffee_club_opt_in INTEGER NOT NULL DEFAULT 0
       )
     `),
     env.DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at DESC)`),
@@ -130,7 +132,9 @@ async function ensureDatabase(env) {
     "payment_updated_at TEXT",
     "square_payment_id TEXT",
     "square_receipt_url TEXT",
-    "paid_at TEXT"
+    "paid_at TEXT",
+    "delivery_interest INTEGER NOT NULL DEFAULT 0",
+    "coffee_club_opt_in INTEGER NOT NULL DEFAULT 0"
   ];
 
   for (const column of paymentColumns) {
@@ -226,6 +230,8 @@ async function createOrder(request, env, ctx) {
   const pickupDate = clean(body.pickupDate, 10);
   const pickupWindow = clean(body.pickupWindow, 40) || DEFAULT_PICKUP_WINDOW;
   const notes = clean(body.notes, 500);
+  const deliveryInterest = body.deliveryInterest === true ? 1 : 0;
+  const coffeeClubOptIn = body.coffeeClubOptIn === true ? 1 : 0;
 
   if (customerName.length < 2) return json({ok: false, error: "Please enter your name."}, 400);
   const phoneDigits = customerPhone.replace(/\D/g, "");
@@ -261,8 +267,8 @@ async function createOrder(request, env, ctx) {
         INSERT INTO orders (
           order_number, created_at, customer_name, customer_phone, customer_email,
           pickup_date, pickup_window, notes, subtotal_cents, bottle_count, items_json, status,
-          payment_access_hash, payment_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, 'UNPAID')
+          payment_access_hash, payment_status, delivery_interest, coffee_club_opt_in
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'new', ?, 'UNPAID', ?, ?)
       `).bind(
         orderNumber,
         createdAt,
@@ -275,7 +281,9 @@ async function createOrder(request, env, ctx) {
         parsed.subtotal,
         parsed.bottleCount,
         JSON.stringify(parsed.items),
-        paymentAccessHash
+        paymentAccessHash,
+        deliveryInterest,
+        coffeeClubOptIn
       ).run();
       inserted = true;
     } catch (error) {
@@ -295,6 +303,8 @@ async function createOrder(request, env, ctx) {
     bottleCount: parsed.bottleCount,
     pickupDate,
     pickupWindow,
+    deliveryInterest: Boolean(deliveryInterest),
+    coffeeClubOptIn: Boolean(coffeeClubOptIn),
     paymentPath,
     paymentAvailable: Boolean(paymentPath)
   }, 201);
@@ -660,6 +670,8 @@ async function createSquarePayment(request, env, ctx) {
       subtotal: claimed.subtotal_cents,
       bottleCount: claimed.bottle_count,
       items: safeParseItems(claimed.items_json),
+      deliveryInterest: Boolean(claimed.delivery_interest),
+      coffeeClubOptIn: Boolean(claimed.coffee_club_opt_in),
       paymentStatus,
       receiptUrl: payment.receipt_url || null
     }));
@@ -715,8 +727,8 @@ async function sendOrderEmails(env, order) {
   const siteUrl = env.PUBLIC_SITE_URL || "https://rallypointrefreshments.com";
   const adminUrl = `${siteUrl.replace(/\/$/, "")}/admin`;
   const total = `$${(order.subtotal / 100).toFixed(2)}`;
-  const pickupLabel = order.pickupWindow === DEFAULT_PICKUP_WINDOW
-    ? `${order.pickupDate} — exact details confirmed by text`
+  const pickupLabel = order.pickupWindow === "Details confirmed by text"
+    ? `${order.pickupDate} — 10 AM in Henderson`
     : `${order.pickupDate} — ${order.pickupWindow}`;
 
   const addonLabel = item => {
@@ -768,6 +780,8 @@ async function sendOrderEmails(env, order) {
     `Bottles: ${order.bottleCount}`,
     `Total: ${total}`,
     "Payment: Paid online by card through Square",
+    `Local delivery requested: ${order.deliveryInterest ? "Yes — follow up before changing pickup" : "No"}`,
+    `Coffee Club reminder consent: ${order.coffeeClubOptIn ? "Yes" : "No"}`,
     order.receiptUrl ? `Square receipt: ${order.receiptUrl}` : "",
     "",
     itemText,
@@ -790,6 +804,8 @@ async function sendOrderEmails(env, order) {
       <tr><td style="padding:7px 0;color:#6b7280">Bottles</td><td style="padding:7px 0;text-align:right;font-weight:700">${order.bottleCount}</td></tr>
       <tr><td style="padding:7px 0;color:#6b7280">Total</td><td style="padding:7px 0;text-align:right;font-size:20px;font-weight:800">${total}</td></tr>
       <tr><td style="padding:7px 0;color:#6b7280">Payment</td><td style="padding:7px 0;text-align:right;color:#17734c;font-weight:800">Paid online</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Delivery interest</td><td style="padding:7px 0;text-align:right;font-weight:700">${order.deliveryInterest ? "Yes — follow up" : "No"}</td></tr>
+      <tr><td style="padding:7px 0;color:#6b7280">Coffee Club texts</td><td style="padding:7px 0;text-align:right;font-weight:700">${order.coffeeClubOptIn ? "Opted in" : "No"}</td></tr>
     </table>
 
     <div style="padding:16px;border-radius:12px;background:#f5ecdd">
@@ -830,7 +846,9 @@ async function sendOrderEmails(env, order) {
       "",
       itemText,
       "",
-      "We saved your order and will contact you with the exact pickup details.",
+      "Pickup is at 10 AM in Henderson. We will text the exact address and instructions after checkout.",
+      order.deliveryInterest ? "You asked about local delivery. Your order remains pickup unless Rally Point confirms delivery and any fee by text." : "",
+      order.coffeeClubOptIn ? "You opted in to the weekly Saturday Coffee Club ordering reminder by text. Reply STOP to opt out." : "",
       `Questions? Text us at (252) 226-0557.`
     ].filter(Boolean).join("\n");
 
@@ -856,6 +874,18 @@ async function sendOrderEmails(env, order) {
         <ul style="margin:10px 0 0;padding-left:20px">${itemHtml}</ul>
       </div>
 
+      ${order.deliveryInterest ? `
+        <p style="margin:18px 0 0;padding:12px;border-radius:10px;background:#fff6e5;color:#4b5563">
+          <strong>Delivery requested:</strong> your order remains scheduled for pickup unless we confirm local delivery and any fee by text.
+        </p>
+      ` : ""}
+
+      ${order.coffeeClubOptIn ? `
+        <p style="margin:18px 0 0;color:#4b5563">
+          You’re on the Saturday Coffee Club reminder list. We’ll text when weekly ordering opens. Reply STOP to opt out.
+        </p>
+      ` : ""}
+
       ${order.receiptUrl ? `
         <div style="margin-top:20px;text-align:center">
           <a href="${escapeHtml(order.receiptUrl)}" style="display:inline-block;padding:13px 22px;border-radius:10px;border:2px solid #06182f;color:#06182f;font-weight:800;text-decoration:none">
@@ -865,7 +895,7 @@ async function sendOrderEmails(env, order) {
       ` : ""}
 
       <p style="margin:20px 0 0;color:#4b5563">
-        We will contact you with the exact pickup details. Questions?
+        Pickup is at 10 AM in Henderson. We will text the exact address and instructions. Questions?
         <a href="sms:+12522260557" style="color:#c8212c;font-weight:800">Text (252) 226-0557</a>.
       </p>
     `);

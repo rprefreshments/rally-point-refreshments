@@ -1,4 +1,10 @@
 const money = cents => `$${(Number(cents) / 100).toFixed(2).replace(".00", "")}`;
+const escapeHtml = value => String(value ?? "")
+  .replaceAll("&", "&amp;")
+  .replaceAll("<", "&lt;")
+  .replaceAll(">", "&gt;")
+  .replaceAll('"', "&quot;")
+  .replaceAll("'", "&#039;");
 const ordersWrap = document.getElementById("orders");
 const template = document.getElementById("orderTemplate");
 let orders = [];
@@ -37,8 +43,38 @@ function formatPickup(value, windowName) {
     day: "numeric"
   }).format(date);
   return windowName === "Details confirmed by text"
-    ? `${formatted} • Details by text`
+    ? `${formatted} • 10 AM in Henderson`
     : `${formatted} • ${windowName}`;
+}
+
+function renderReminders() {
+  const membersByPhone = new Map();
+  orders
+    .filter(order => Boolean(order.coffee_club_opt_in) && order.payment_status === "COMPLETED")
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .forEach(order => {
+      const digits = order.customer_phone.replace(/\D/g, "");
+      if (digits && !membersByPhone.has(digits)) membersByPhone.set(digits, order);
+    });
+
+  const members = [...membersByPhone.entries()];
+  document.getElementById("reminderCount").textContent = `${members.length} opted in`;
+  const list = document.getElementById("reminderList");
+  if (!members.length) {
+    list.innerHTML = '<span class="reminder-empty">No Coffee Club members yet.</span>';
+    return;
+  }
+
+  list.innerHTML = members.map(([digits, member]) => {
+    const firstName = member.customer_name.trim().split(/\s+/)[0] || "there";
+    const message = `Hi ${firstName}! Saturday Coffee Club ordering is open. Reorder your usual or build this week’s pack at https://rallypointrefreshments.com — Rally Point Refreshments. Reply STOP to opt out.`;
+    return `
+      <div class="reminder-member">
+        <span><strong>${escapeHtml(member.customer_name)}</strong><small>${escapeHtml(member.customer_phone)}</small></span>
+        <a href="sms:${digits}?body=${encodeURIComponent(message)}">Open reminder text</a>
+      </div>
+    `;
+  }).join("");
 }
 
 function summarizeItems(items) {
@@ -233,6 +269,13 @@ function renderOrders() {
       paymentBadge.classList.add("pending");
     }
 
+    const preferenceBadges = fragment.querySelector(".preference-badges");
+    preferenceBadges.innerHTML = [
+      order.delivery_interest ? '<span class="preference delivery">Delivery interest — follow up</span>' : "",
+      order.coffee_club_opt_in ? '<span class="preference club">Coffee Club opt-in</span>' : ""
+    ].filter(Boolean).join("");
+    preferenceBadges.hidden = !preferenceBadges.innerHTML;
+
     const statusSelect = fragment.querySelector(".status-select");
     statusSelect.value = order.status;
     statusSelect.dataset.status = order.status;
@@ -309,6 +352,7 @@ async function loadOrders(showLoading = true) {
     const data = await response.json();
     orders = data.orders || [];
     renderStats();
+    renderReminders();
     renderOrders();
     document.getElementById("lastUpdated").textContent =
       `Updated ${new Intl.DateTimeFormat("en-US", {hour: "numeric", minute: "2-digit"}).format(new Date())}`;

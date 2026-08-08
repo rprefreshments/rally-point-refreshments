@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#06182f">
-  <link rel="stylesheet" href="/admin.css?v=9">
+  <link rel="stylesheet" href="/admin.css?v=10">
   <title>Rally Point Orders</title>
 </head>
 <body>
@@ -30,6 +30,20 @@
     </div>
 
     <section class="stats" id="stats"></section>
+
+    <section class="reminder-panel" aria-labelledby="reminderTitle">
+      <div class="reminder-head">
+        <div>
+          <small>Saturday Coffee Club</small>
+          <h2 id="reminderTitle">Weekly reminder list</h2>
+          <p>Only paid customers who explicitly opted in appear here. Open each text to send the reminder individually.</p>
+        </div>
+        <strong id="reminderCount">0 opted in</strong>
+      </div>
+      <div class="reminder-list" id="reminderList">
+        <span class="reminder-empty">No Coffee Club members yet.</span>
+      </div>
+    </section>
 
     <section class="toolbar">
       <label>
@@ -103,6 +117,7 @@
       </div>
 
       <a class="payment-badge" target="_blank" rel="noopener"></a>
+      <div class="preference-badges"></div>
 
       <div class="customer-grid">
         <div><small>Customer</small><strong class="customer-name"></strong></div>
@@ -123,6 +138,6 @@
     </article>
   </template>
 
-  <script src="/admin.js?v=9"></script>
+  <script src="/admin.js?v=10"></script>
 </body>
 </html>

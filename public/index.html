@@ -7,13 +7,13 @@
   <meta name="description" content="Handmade bottled lattes in Henderson, NC. Poured by hand in small batches, veteran-owned. Build a mix-and-match 6-pack for $30 with Saturday pickup. Order by Thursday 6pm.">
   <meta property="og:title" content="Rally Point Refreshments — Bottled Lattes in Henderson, NC">
   <meta property="og:description" content="Build a mix-and-match 6-pack of veteran-owned bottled coffee for Saturday pickup.">
-  <meta property="og:image" content="https://rallypointrefreshments.com/images/brand-card.jpg">
-  <meta property="og:image:width" content="1536">
-  <meta property="og:image:height" content="876">
+  <meta property="og:image" content="https://rallypointrefreshments.com/images/marketing-hero-v1.webp">
+  <meta property="og:image:width" content="1672">
+  <meta property="og:image:height" content="941">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://rallypointrefreshments.com">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://rallypointrefreshments.com/images/brand-card.jpg">
+  <meta name="twitter:image" content="https://rallypointrefreshments.com/images/marketing-hero-v1.webp">
   <link rel="canonical" href="https://rallypointrefreshments.com">
   <script type="application/ld+json">
   {
@@ -39,13 +39,13 @@
     }
   }
   </script>
-  <link rel="manifest" href="/manifest.json?v=9">
+  <link rel="manifest" href="/manifest.json?v=11">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-  <link rel="stylesheet" href="/style.css?v=10">
+  <link rel="stylesheet" href="/style.css?v=11">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
-  <a class="skip-link" href="#six-pack">Skip to build a 6-pack</a>
+  <a class="skip-link" href="#shop">Skip to shop</a>
 
   <header class="topbar">
     <a class="brand" href="#top" aria-label="Rally Point Refreshments home">
@@ -92,6 +92,10 @@
         fetchpriority="high"
         decoding="async"
       >
+      <div class="hero-fresh-stamp" aria-hidden="true">
+        <span>Bottled</span>
+        <strong>Fresh</strong>
+      </div>
       <svg class="hero-scene" viewBox="0 0 400 620" preserveAspectRatio="xMidYMin slice" aria-hidden="true" focusable="false">
         <defs>
           <radialGradient id="heroGlow" gradientUnits="userSpaceOnUse" cx="200" cy="150" r="290">
@@ -182,11 +186,11 @@
         </p>
 
         <div class="hero-actions">
-          <a class="primary primary-offer" href="#six-pack">
-            <span>Build a 6-Pack</span>
-            <small>$30 • Save $6 vs. singles</small>
+          <a class="primary primary-offer" href="#shop">
+            <span>Choose your pack</span>
+            <small>6-pack, 3-pack, or singles</small>
           </a>
-          <a class="secondary" href="#menu">Shop singles</a>
+          <a class="secondary" href="#coffee-club">Coffee Club</a>
         </div>
 
         <div class="hero-proof">
@@ -202,103 +206,52 @@
         <strong id="orderDeadline">Order by Thursday</strong>
         <span id="orderDeadlineSub">Cutoff is Thursday 6pm for Saturday pickup</span>
       </div>
-      <a href="#six-pack">Build yours →</a>
+      <a href="#shop">Build yours →</a>
     </section>
 
-    <section class="featured-section" id="favorites">
-      <div class="featured-inner">
-        <div class="featured-head">
-          <div>
-            <p class="eyebrow">Customer favorites</p>
-            <h2>Start with the top three.</h2>
-          </div>
-          <p>Not sure what to choose? These flavors make the decision easy.</p>
-        </div>
-        <div class="featured-grid" id="featuredGrid"></div>
-      </div>
-    </section>
-
-    <section class="section pack-section" id="packs">
-      <div class="section-head compact">
+    <section class="section shop-section" id="shop">
+      <div class="section-head shop-head">
         <div>
-          <p class="eyebrow dark">Best overall value</p>
-          <h2>Build your pack.</h2>
+          <p class="eyebrow dark">One simple choice</p>
+          <h2>How are you stocking the fridge?</h2>
         </div>
-        <p>Choose any combination, including multiples of the same flavor.</p>
+        <p>Pick a size, then choose your flavors once. Multiples are always welcome.</p>
       </div>
 
-      <div class="pack-grid">
-        <article class="pack-card featured" id="six-pack" data-pack-size="6" data-price="30">
-          <div class="best-value">Most popular value</div>
+      <div class="shop-choice-grid">
+        <button class="shop-choice best" type="button" data-shop-mode="6">
+          <span class="choice-badge">Best value</span>
+          <span class="choice-copy">
+            <small>Stock the fridge</small>
+            <strong>6-Pack</strong>
+            <span>Any six • $5 each</span>
+          </span>
+          <span class="choice-price"><strong>$30</strong><small>Save $6</small></span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
 
-          <div class="pack-title">
-            <div>
-              <p class="pack-label">Stock the fridge</p>
-              <h3>6-Pack</h3>
-              <span>Any six bottles • $5 each</span>
-            </div>
-            <strong>$30</strong>
-          </div>
+        <button class="shop-choice" type="button" data-shop-mode="3">
+          <span class="choice-copy">
+            <small>Try a few</small>
+            <strong>3-Pack</strong>
+            <span>Any three flavors</span>
+          </span>
+          <span class="choice-price"><strong>$17</strong><small>Mix & match</small></span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
 
-          <div class="pack-savings">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2v20M17 6.5c0-2-1.8-3.5-5-3.5S7 4.4 7 6.5 8.7 9.6 12 10.2s5 1.6 5 3.8-1.8 4-5 4-5-1.7-5-4"/>
-            </svg>
-            Save $6 compared with six singles
-          </div>
-
-          <div class="progress-wrap">
-            <div class="progress-copy">
-              <span>Selected</span>
-              <b class="pack-count">0 / 6</b>
-            </div>
-            <div class="progress-track"><span class="progress-bar"></span></div>
-          </div>
-
-          <div class="pack-options"></div>
-          <button class="pack-add" type="button" disabled>Add 6-Pack — $30</button>
-        </article>
-
-        <article class="pack-card" data-pack-size="3" data-price="17">
-          <div class="pack-title">
-            <div>
-              <p class="pack-label">Try a few</p>
-              <h3>3-Pack</h3>
-              <span>Any three bottles</span>
-            </div>
-            <strong>$17</strong>
-          </div>
-
-          <div class="progress-wrap">
-            <div class="progress-copy">
-              <span>Selected</span>
-              <b class="pack-count">0 / 3</b>
-            </div>
-            <div class="progress-track"><span class="progress-bar"></span></div>
-          </div>
-
-          <div class="pack-options"></div>
-          <button class="pack-add" type="button" disabled>Add 3-Pack — $17</button>
-        </article>
-      </div>
-    </section>
-
-    <section class="section menu-section" id="menu">
-      <div class="section-head compact">
-        <div>
-          <p class="eyebrow dark">Full coffee lineup</p>
-          <h2>Or grab a single.</h2>
-        </div>
-        <p>Tap any flavor to add a $6 bottle. Adjust quantities from your cart.</p>
+        <button class="shop-choice" type="button" data-shop-mode="single">
+          <span class="choice-copy">
+            <small>Start small</small>
+            <strong>Singles</strong>
+            <span>Choose one or more</span>
+          </span>
+          <span class="choice-price"><strong>$6</strong><small>per bottle</small></span>
+          <span class="choice-arrow" aria-hidden="true">→</span>
+        </button>
       </div>
 
-      <div class="filter-row" aria-label="Menu shortcuts">
-        <button class="filter active" type="button" data-filter="all">All flavors</button>
-        <button class="filter" type="button" data-filter="best">Best sellers</button>
-        <button class="filter" type="button" data-filter="chocolate">Chocolate</button>
-      </div>
-
-      <div class="product-grid" id="productGrid"></div>
+      <p class="shop-reassurance">Seven handmade flavors • One easy picker • Saturday preorder pickup</p>
     </section>
 
     <section class="details-section">
@@ -323,7 +276,7 @@
           </span>
           <div>
             <strong>Saturday pickup</strong>
-            <span>We text the exact pickup details after ordering.</span>
+            <span>10 AM in Henderson. Exact instructions are texted after checkout.</span>
           </div>
         </article>
         <article>
@@ -337,6 +290,22 @@
             <span>Pay securely by card right on our site through Square.</span>
           </div>
         </article>
+      </div>
+    </section>
+
+    <section class="coffee-club-section" id="coffee-club">
+      <div class="coffee-club-card">
+        <div class="club-copy">
+          <p class="eyebrow">Saturday Coffee Club</p>
+          <h2>Your usual, without rebuilding it.</h2>
+          <p>Reorder last week’s coffee, save your favorite six-pack, and opt in to a weekly ordering reminder by text.</p>
+          <small>Favorites and past orders are saved privately on this device after payment.</small>
+        </div>
+        <div class="club-actions" id="clubActions">
+          <button class="club-button primary-club" id="reorderLast" type="button" hidden>Reorder last week’s order</button>
+          <button class="club-button" id="addFavorite" type="button" hidden>Add favorite 6-pack</button>
+          <a class="club-text-link" href="#shop">Build this week’s order →</a>
+        </div>
       </div>
     </section>
 
@@ -407,6 +376,18 @@
 
       <div id="cartItems"></div>
 
+      <div class="cart-upsell" id="cartUpsell" hidden>
+        <div>
+          <strong>Add a seventh bottle for $4</strong>
+          <span>A little extra for the week—completely optional.</span>
+        </div>
+        <div class="cart-upsell-controls">
+          <label for="upsellFlavor">Flavor</label>
+          <select id="upsellFlavor"></select>
+          <button id="addUpsell" type="button">Add for $4</button>
+        </div>
+      </div>
+
       <div class="total-row">
         <span>Subtotal</span>
         <strong id="subtotal">$0</strong>
@@ -414,8 +395,9 @@
 
       <form class="checkout" id="checkoutForm">
         <div class="pickup-box">
-          <strong id="pickupDateText">Saturday pickup</strong>
-          <span>We will text you with the exact pickup time and location.</span>
+          <strong id="pickupDateText">Saturday pickup at 10 AM</strong>
+          <span>Henderson, NC • Exact address and instructions are texted after checkout.</span>
+          <small>Preorder pickup only—there is no walk-in storefront.</small>
         </div>
 
         <label>
@@ -437,6 +419,24 @@
           Notes <span class="optional">(optional)</span>
           <textarea id="notes" name="notes" maxlength="500" placeholder="Allergies or special requests"></textarea>
         </label>
+
+        <fieldset class="checkout-options">
+          <legend>Optional</legend>
+          <label class="check-option">
+            <input id="deliveryInterest" name="deliveryInterest" type="checkbox">
+            <span>
+              <strong>Ask me about local delivery</strong>
+              <small>We’ll text availability and any fee. Your order remains pickup unless we confirm delivery.</small>
+            </span>
+          </label>
+          <label class="check-option">
+            <input id="coffeeClubOptIn" name="coffeeClubOptIn" type="checkbox">
+            <span>
+              <strong>Send me the weekly ordering reminder</strong>
+              <small>By checking this box, you agree to receive recurring Rally Point ordering texts. Message frequency varies; message and data rates may apply. Reply STOP to opt out.</small>
+            </span>
+          </label>
+        </fieldset>
 
         <div class="payment-required" aria-label="Online payment information">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -461,26 +461,40 @@
         <button class="text-fallback" id="textOrder" type="button">Having trouble? Text the order instead</button>
 
         <small class="fine-print">
-          By ordering, you agree that Rally Point Refreshments may contact you about this pickup.
+          We may text you about this order and pickup. Marketing reminders are sent only if you opt in above.
         </small>
       </form>
     </section>
   </div>
 
-  <div class="addon-overlay" id="addonOverlay" aria-hidden="true">
-    <section class="addon-card" role="dialog" aria-modal="true" aria-labelledby="addonTitle">
-      <p class="eyebrow dark">Add to your order</p>
-      <h2 id="addonTitle">Add a bottle for $5</h2>
-      <p class="addon-sub">Pick any flavor to add to this pack.</p>
+  <div class="builder-overlay" id="builderOverlay" aria-hidden="true">
+    <section class="builder-card" role="dialog" aria-modal="true" aria-labelledby="builderTitle" aria-describedby="builderSub">
+      <div class="builder-head">
+        <div>
+          <p class="eyebrow dark">Choose your flavors</p>
+          <h2 id="builderTitle">Build a 6-Pack</h2>
+          <p id="builderSub">Pick any six. Choose a favorite more than once if you like.</p>
+        </div>
+        <button class="builder-close" id="closeBuilder" type="button" aria-label="Close flavor picker">×</button>
+      </div>
 
-      <div class="addon-grid" id="addonGrid"></div>
+      <div class="builder-progress" id="builderProgress">
+        <span>Selected</span>
+        <strong id="builderCount">0 / 6</strong>
+        <div class="builder-track" aria-hidden="true"><span id="builderBar"></span></div>
+      </div>
 
-      <button class="addon-skip" id="addonSkip" type="button">No thanks</button>
+      <div class="builder-flavors" id="builderFlavors"></div>
+
+      <div class="builder-footer">
+        <p id="builderHint" role="status" aria-live="polite">Choose 6 bottles to continue.</p>
+        <button class="builder-add" id="builderAdd" type="button" disabled>Add 6-Pack — $30</button>
+      </div>
     </section>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=9"></script>
+  <script src="/app.js?v=11"></script>
 </body>
 </html>

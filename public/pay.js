@@ -19,7 +19,7 @@ function money(cents) {
 function formatPickup(isoDate, windowLabel) {
   const date = new Date(`${isoDate}T12:00:00`);
   const formatted = new Intl.DateTimeFormat("en-US", {weekday: "short", month: "short", day: "numeric"}).format(date);
-  return windowLabel === "Details confirmed by text" ? formatted : `${formatted}, ${windowLabel}`;
+  return windowLabel === "Details confirmed by text" ? `${formatted}, 10 AM in Henderson` : `${formatted}, ${windowLabel}`;
 }
 
 function readAccessFromHash() {
@@ -92,12 +92,45 @@ function showSuccess(receiptUrl) {
   document.getElementById("successOrder").textContent = order.orderNumber;
   sessionStorage.removeItem("rallyPendingPayment");
 
+  const savedUsual = savePaidOrderForReorder();
+  if (savedUsual) {
+    document.getElementById("successCopy").textContent = "Your order is paid and confirmed. We saved this order on this device for quick Coffee Club reordering.";
+  }
+
   const receiptLink = document.getElementById("receiptLink");
   if (receiptUrl) {
     receiptLink.href = receiptUrl;
     receiptLink.hidden = false;
   }
   successCard.querySelector("h1").focus();
+}
+
+function savePaidOrderForReorder() {
+  try {
+    const pending = JSON.parse(sessionStorage.getItem("rallyPendingOrderCartV1") || "null");
+    if (!pending || pending.orderNumber !== order.orderNumber || !Array.isArray(pending.items) || !pending.items.length) return false;
+
+    localStorage.setItem("rallyLastOrderV1", JSON.stringify({
+      orderNumber: order.orderNumber,
+      paidAt: new Date().toISOString(),
+      items: pending.items
+    }));
+
+    const favoriteSixPack = [...pending.items].reverse().find(item =>
+      item?.type === "pack" && Number(item.size) === 6 && Array.isArray(item.flavors) && item.flavors.length === 6
+    );
+    if (favoriteSixPack) {
+      localStorage.setItem("rallyFavoriteSixPackV1", JSON.stringify({
+        savedAt: new Date().toISOString(),
+        flavors: favoriteSixPack.flavors
+      }));
+    }
+
+    sessionStorage.removeItem("rallyPendingOrderCartV1");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 async function initializePayment() {
