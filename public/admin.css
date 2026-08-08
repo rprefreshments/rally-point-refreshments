@@ -38,12 +38,30 @@ header button{
   border-radius:10px;background:rgba(255,255,255,.1);color:white;font-weight:800
 }
 main{max-width:1180px;margin:auto;padding:22px 15px 60px}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:17px}
-.stat{
-  padding:15px;border:1px solid var(--line);border-radius:15px;background:white
+.tabs{
+  display:flex;gap:8px;margin-bottom:16px;padding:5px;
+  border:1px solid var(--line);border-radius:14px;background:white
 }
-.stat strong,.stat span{display:block}
-.stat strong{color:var(--navy);font-size:25px}
+.tab{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:44px;padding:9px 12px;border:0;border-radius:10px;
+  background:transparent;color:var(--muted);font-weight:800;cursor:pointer
+}
+.tab:hover{background:#f5efe6;color:var(--navy)}
+.tab.active{background:var(--navy);color:white}
+.tab b{
+  min-width:23px;padding:2px 7px;border-radius:999px;
+  background:rgba(0,0,0,.09);color:inherit;font-size:12px
+}
+.tab.active b{background:rgba(255,255,255,.22)}
+
+/* Compact chips: the tab pills already carry the headline counts. */
+.stats{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+.stat{
+  display:flex;align-items:baseline;gap:6px;
+  padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:white
+}
+.stat strong{color:var(--navy);font-size:15px}
 .stat span{color:var(--muted);font-size:12px}
 .toolbar{
   display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin-bottom:14px
@@ -65,6 +83,8 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
   position:sticky;top:60px;z-index:9;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
   padding:12px 14px;margin-bottom:14px;border-radius:14px;background:var(--navy);color:white
 }
+/* Author display:flex outranks the UA [hidden] rule, so restate it. */
+.bulk-bar[hidden]{display:none}
 .bulk-bar select,.bulk-bar button{
   padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.3);
   background:rgba(255,255,255,.12);color:white;font-weight:800
@@ -119,14 +139,22 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
 }
 .notes-wrap{margin-top:12px}
 .notes{margin:4px 0 0;color:#4b5563;font-size:13px}
-.actions{display:flex;gap:9px;margin-top:14px}
-.actions a{
-  flex:1;padding:10px;border-radius:11px;text-align:center;text-decoration:none;font-weight:850
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.actions a,.actions button{
+  flex:1 1 90px;min-height:42px;padding:10px;border:0;border-radius:11px;
+  text-align:center;text-decoration:none;font:inherit;font-weight:850;cursor:pointer
 }
 .call-link{background:var(--navy);color:white}
 .text-link{background:var(--red);color:white}
+.done-btn{background:#17734c;color:white}
+.done-btn:hover{background:#12603f}
+.undo-btn{border:1px solid var(--line)!important;background:white;color:var(--navy)}
+.undo-btn:hover{background:#f5efe6}
+.actions a:active,.actions button:active{transform:translateY(1px)}
+/* Each card shows only the action that applies to its current state. */
+.order-card[data-done="yes"] .done-btn,
+.order-card[data-done="no"] .undo-btn{display:none}
 @media(min-width:720px){
-  .stats{grid-template-columns:repeat(5,1fr)}
   .orders{grid-template-columns:repeat(2,1fr)}
   .customer-grid{grid-template-columns:repeat(4,1fr)}
 }

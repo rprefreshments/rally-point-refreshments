@@ -5,6 +5,21 @@ let orders = [];
 const selectedIds = new Set();
 let autoRefreshTimer = null;
 
+// An order is "done" once it is picked up or cancelled; those move to the
+// Completed tab so the working list only shows what still needs attention.
+const DONE_STATUSES = new Set(["picked_up", "cancelled"]);
+// Where "Undo" sends an order back to, per status.
+const UNDO_TARGET = {picked_up: "ready", cancelled: "new"};
+const STATUS_OPTIONS = {
+  active: [["", "All active"], ["new", "New"], ["confirmed", "Confirmed"],
+           ["preparing", "Preparing"], ["ready", "Ready"]],
+  done: [["", "All completed"], ["picked_up", "Picked up"], ["cancelled", "Cancelled"]]
+};
+let activeTab = "active";
+
+const isDone = order => DONE_STATUSES.has(order.status);
+const inActiveTab = order => (activeTab === "done" ? isDone(order) : !isDone(order));
+
 function formatCreated(value) {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -39,13 +54,8 @@ function summarizeItems(items) {
 }
 
 function renderStats() {
-  const statuses = [
-    ["new", "New"],
-    ["confirmed", "Confirmed"],
-    ["preparing", "Preparing"],
-    ["ready", "Ready"],
-    ["picked_up", "Picked up"]
-  ];
+  // Only the statuses belonging to the visible tab, so the tiles stay useful.
+  const statuses = STATUS_OPTIONS[activeTab].filter(([key]) => key);
 
   document.getElementById("stats").innerHTML = statuses.map(([key, label]) => `
     <div class="stat">
@@ -53,14 +63,46 @@ function renderStats() {
       <span>${label}</span>
     </div>
   `).join("");
+
+  document.getElementById("countActive").textContent = orders.filter(o => !isDone(o)).length;
+  document.getElementById("countDone").textContent = orders.filter(isDone).length;
 }
+
+function renderStatusFilter(keepValue) {
+  const select = document.getElementById("statusFilter");
+  select.innerHTML = STATUS_OPTIONS[activeTab]
+    .map(([value, label]) => `<option value="${value}">${label}</option>`)
+    .join("");
+  select.value = STATUS_OPTIONS[activeTab].some(([v]) => v === keepValue) ? keepValue : "";
+}
+
+function switchTab(tab) {
+  if (tab === activeTab) return;
+  activeTab = tab;
+  selectedIds.clear();
+
+  document.querySelectorAll(".tab").forEach(button => {
+    const on = button.dataset.tab === tab;
+    button.classList.toggle("active", on);
+    button.setAttribute("aria-selected", String(on));
+  });
+
+  renderStatusFilter("");
+  renderStats();
+  renderOrders();
+}
+
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => switchTab(button.dataset.tab));
+});
 
 function getFilteredOrders() {
   const statusValue = document.getElementById("statusFilter").value;
   const searchValue = document.getElementById("searchInput").value.trim().toLowerCase();
   const sortValue = document.getElementById("sortOrder").value;
 
-  let filtered = statusValue ? orders.filter(order => order.status === statusValue) : orders.slice();
+  let filtered = orders.filter(inActiveTab);
+  if (statusValue) filtered = filtered.filter(order => order.status === statusValue);
 
   if (searchValue) {
     filtered = filtered.filter(order =>
@@ -95,6 +137,32 @@ function updateBulkBar() {
   document.getElementById("bulkCount").textContent = `${selectedIds.size} selected`;
 }
 
+async function setStatus(order, next) {
+  const previous = order.status;
+  if (next === previous) {
+    renderOrders();
+    return;
+  }
+
+  order.status = next;
+  renderStats();
+  renderOrders();
+
+  try {
+    const response = await fetch(`/api/orders/${order.id}`, {
+      method: "PATCH",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({status: next})
+    });
+    if (!response.ok) throw new Error("Could not update order");
+  } catch (error) {
+    order.status = previous;
+    renderStats();
+    renderOrders();
+    alert(error.message);
+  }
+}
+
 function renderOrders() {
   const filtered = getFilteredOrders();
   renderSummary(filtered);
@@ -121,6 +189,7 @@ function renderOrders() {
     const card = fragment.querySelector(".order-card");
     card.dataset.status = order.status;
     card.dataset.id = order.id;
+    card.dataset.done = isDone(order) ? "yes" : "no";
 
     const checkbox = fragment.querySelector(".order-checkbox");
     checkbox.checked = selectedIds.has(order.id);
@@ -158,27 +227,16 @@ function renderOrders() {
     const statusSelect = fragment.querySelector(".status-select");
     statusSelect.value = order.status;
     statusSelect.dataset.status = order.status;
-    statusSelect.addEventListener("change", async () => {
-      const previous = order.status;
-      order.status = statusSelect.value;
+    statusSelect.addEventListener("change", () => {
       statusSelect.disabled = true;
+      setStatus(order, statusSelect.value);
+    });
 
-      try {
-        const response = await fetch(`/api/orders/${order.id}`, {
-          method: "PATCH",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({status: statusSelect.value})
-        });
-        if (!response.ok) throw new Error("Could not update order");
-        renderStats();
-        renderOrders();
-      } catch (error) {
-        order.status = previous;
-        statusSelect.value = previous;
-        statusSelect.dataset.status = previous;
-        statusSelect.disabled = false;
-        alert(error.message);
-      }
+    fragment.querySelector(".done-btn").addEventListener("click", () => {
+      setStatus(order, "picked_up");
+    });
+    fragment.querySelector(".undo-btn").addEventListener("click", () => {
+      setStatus(order, UNDO_TARGET[order.status] || "ready");
     });
 
     const digits = order.customer_phone.replace(/\D/g, "");
@@ -272,5 +330,6 @@ document.getElementById("statusFilter").addEventListener("change", renderOrders)
 document.getElementById("searchInput").addEventListener("input", renderOrders);
 document.getElementById("sortOrder").addEventListener("change", renderOrders);
 
+renderStatusFilter("");
 loadOrders();
 if (document.getElementById("autoRefresh").checked) startAutoRefresh();

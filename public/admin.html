@@ -20,6 +20,15 @@
   </header>
 
   <main>
+    <div class="tabs" role="tablist" aria-label="Order lists">
+      <button class="tab active" id="tabActive" type="button" role="tab" aria-selected="true" data-tab="active">
+        Active <b id="countActive">0</b>
+      </button>
+      <button class="tab" id="tabDone" type="button" role="tab" aria-selected="false" data-tab="done">
+        Completed <b id="countDone">0</b>
+      </button>
+    </div>
+
     <section class="stats" id="stats"></section>
 
     <section class="toolbar">
@@ -29,15 +38,7 @@
       </label>
       <label>
         Status
-        <select id="statusFilter">
-          <option value="">All orders</option>
-          <option value="new">New</option>
-          <option value="confirmed">Confirmed</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="picked_up">Picked up</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+        <select id="statusFilter"></select>
       </label>
       <label>
         Sort
@@ -116,6 +117,8 @@
       <div class="actions">
         <a class="call-link">Call</a>
         <a class="text-link">Text</a>
+        <button class="done-btn" type="button">Mark done</button>
+        <button class="undo-btn" type="button">Undo</button>
       </div>
     </article>
   </template>
