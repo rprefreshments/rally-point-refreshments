@@ -1413,3 +1413,182 @@ h1{
 @media(min-width:720px){
   .bulk-card{grid-template-columns:1fr auto}
 }
+
+/* ===== Pack add-on picker ===== */
+.addon-overlay{
+  position:fixed;
+  inset:0;
+  z-index:95;
+  display:none;
+  place-items:center;
+  padding:18px;
+  background:rgba(6,24,47,.78);
+  backdrop-filter:blur(8px);
+}
+.addon-overlay.open{display:grid}
+.addon-card{
+  width:min(100%,430px);
+  max-height:88vh;
+  overflow-y:auto;
+  padding:24px 20px;
+  border-radius:25px;
+  background:var(--paper);
+  box-shadow:0 25px 70px rgba(0,0,0,.3);
+  text-align:center;
+  animation:confirmIn .25s ease-out;
+}
+.addon-card h2{
+  margin:0 0 6px;
+  color:var(--navy);
+  font-size:30px;
+  line-height:1.05;
+}
+.addon-sub{
+  margin:0 0 16px;
+  color:var(--muted);
+  font-size:14px;
+}
+.addon-grid{
+  display:grid;
+  gap:8px;
+  margin-bottom:14px;
+}
+.addon-option{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  min-height:52px;
+  padding:11px 14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--white);
+  color:var(--navy);
+  font:inherit;
+  font-weight:800;
+  text-align:left;
+  cursor:pointer;
+}
+.addon-option:hover{border-color:var(--red);background:#fff6f0}
+.addon-option:active{transform:translateY(1px)}
+.addon-option b{
+  flex:none;
+  color:var(--red);
+  font-size:17px;
+}
+.addon-skip{
+  width:100%;
+  min-height:48px;
+  padding:12px;
+  border:0;
+  border-radius:14px;
+  background:transparent;
+  color:var(--muted);
+  font:inherit;
+  font-weight:800;
+  cursor:pointer;
+}
+.addon-skip:hover{color:var(--navy);background:#f0e7d9}
+
+/* ===== Brand lockup: white rounded card in the top bar =====
+   Sits on the navy bar, so the type flips from white to navy. */
+.brand{
+  padding:5px 15px 5px 5px;
+  border-radius:15px;
+  background:#fff;
+  color:var(--navy);
+  box-shadow:0 5px 16px rgba(3,21,45,.3);
+}
+.brand strong{color:var(--navy)}
+.brand small{color:#5b6880;font-weight:800}
+.brand-mark{
+  width:36px;
+  height:36px;
+  flex:0 0 36px;
+  border:0;
+  box-shadow:0 0 0 2px rgba(240,189,88,.55);
+}
+.brand-mark svg{width:21px;height:21px}
+.brand:active{transform:translateY(1px)}
+
+/* ===== Animated hero: iced latte pour =====
+   Every element's default style is its FINAL state, so disabling the
+   animations (reduced motion) leaves a correctly poured glass. */
+.hero-scene{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+}
+.scene-glow{
+  animation:sceneGlow 1600ms ease-out both;
+}
+@keyframes sceneGlow{from{opacity:0}}
+
+.scene-glass{
+  transform-box:fill-box;
+  transform-origin:center bottom;
+  animation:sceneGlassIn 900ms cubic-bezier(.2,.8,.25,1) both;
+}
+@keyframes sceneGlassIn{
+  from{opacity:0;transform:translateY(20px) scale(.95)}
+}
+
+.ice{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:iceDrop 640ms cubic-bezier(.3,1.5,.45,1) both;
+}
+.ice-1{animation-delay:560ms}
+.ice-2{animation-delay:680ms}
+.ice-3{animation-delay:800ms}
+.ice-4{animation-delay:920ms}
+@keyframes iceDrop{
+  from{opacity:0;transform:translateY(-52px)}
+}
+
+/* The pour itself: stream grows from the spout, then fades once poured. */
+.pour-stream{
+  transform-box:fill-box;
+  transform-origin:top center;
+  opacity:0;
+  animation:pourStream 1900ms ease-in-out 1020ms both;
+}
+@keyframes pourStream{
+  0%{opacity:0;transform:scaleY(0)}
+  9%{opacity:1;transform:scaleY(1)}
+  76%{opacity:1;transform:scaleY(1)}
+  100%{opacity:0;transform:scaleY(1)}
+}
+
+/* Both liquids start fully below the glass base (y=420) so they rise into view. */
+.liquid-milk{animation:fillMilk 900ms cubic-bezier(.25,.9,.3,1) 1060ms backwards}
+@keyframes fillMilk{from{transform:translateY(140px)}}
+
+.liquid-coffee{animation:fillCoffee 1500ms cubic-bezier(.25,.85,.3,1) 1260ms backwards}
+@keyframes fillCoffee{from{transform:translateY(285px)}}
+
+.crema{
+  transform-box:fill-box;
+  transform-origin:center;
+  opacity:.42;
+  animation:cremaBloom 1500ms ease-out 1600ms both;
+}
+@keyframes cremaBloom{
+  0%{opacity:0;transform:scale(.55)}
+  30%{opacity:.8;transform:scale(1)}
+  100%{opacity:.42;transform:scale(1)}
+}
+
+.glass-sheen{animation:sheenIn 1000ms ease-out 700ms backwards}
+@keyframes sheenIn{from{opacity:0}}
+
+.drops{animation:dropsIn 1200ms ease-out 2500ms backwards}
+@keyframes dropsIn{from{opacity:0}}
+
+@media(prefers-reduced-motion:reduce){
+  .hero-scene *{animation:none!important}
+  .pour-stream{opacity:0}
+}

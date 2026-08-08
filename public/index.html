@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#03152d">
-  <meta name="description" content="Handcrafted bottled lattes in Henderson, NC. Veteran-owned. Build a mix-and-match 6-pack for $30 with Saturday pickup. Order by Thursday 6pm.">
+  <meta name="description" content="Handmade bottled lattes in Henderson, NC. Poured by hand in small batches, veteran-owned. Build a mix-and-match 6-pack for $30 with Saturday pickup. Order by Thursday 6pm.">
   <meta property="og:title" content="Rally Point Refreshments — Bottled Lattes in Henderson, NC">
   <meta property="og:description" content="Build a mix-and-match 6-pack of veteran-owned bottled coffee for Saturday pickup.">
   <meta property="og:image" content="https://rallypointrefreshments.com/images/brand-card.jpg">
@@ -39,10 +39,9 @@
     }
   }
   </script>
-  <link rel="manifest" href="/manifest.json?v=7">
+  <link rel="manifest" href="/manifest.json?v=8">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-  <link rel="preload" as="image" href="/images/bottles.jpg">
-  <link rel="stylesheet" href="/style.css?v=7">
+  <link rel="stylesheet" href="/style.css?v=8">
   <title>Rally Point Refreshments</title>
 </head>
 <body>
@@ -84,7 +83,81 @@
 
   <main id="top">
     <section class="hero">
-      <img src="/images/bottles.jpg" alt="Rally Point bottled lattes" fetchpriority="high">
+      <svg class="hero-scene" viewBox="0 0 400 620" preserveAspectRatio="xMidYMin slice" aria-hidden="true" focusable="false">
+        <defs>
+          <radialGradient id="heroGlow" gradientUnits="userSpaceOnUse" cx="200" cy="150" r="290">
+            <stop offset="0%" stop-color="#f0bd58" stop-opacity=".34"/>
+            <stop offset="45%" stop-color="#b8642a" stop-opacity=".12"/>
+            <stop offset="100%" stop-color="#03152d" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="baseShine" gradientUnits="userSpaceOnUse" cx="200" cy="424" r="120">
+            <stop offset="0%" stop-color="#f0bd58" stop-opacity=".26"/>
+            <stop offset="100%" stop-color="#f0bd58" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="glassBody" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#fff" stop-opacity=".17"/>
+            <stop offset="46%" stop-color="#fff" stop-opacity=".04"/>
+            <stop offset="100%" stop-color="#fff" stop-opacity=".14"/>
+          </linearGradient>
+          <linearGradient id="milkFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#fdf4e7"/>
+            <stop offset="100%" stop-color="#e4cca6"/>
+          </linearGradient>
+          <linearGradient id="coffeeFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8d5a30"/>
+            <stop offset="34%" stop-color="#5d3520"/>
+            <stop offset="78%" stop-color="#432817" stop-opacity=".92"/>
+            <stop offset="100%" stop-color="#432817" stop-opacity=".35"/>
+          </linearGradient>
+          <linearGradient id="streamFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#8a5730" stop-opacity=".5"/>
+            <stop offset="30%" stop-color="#704425"/>
+            <stop offset="100%" stop-color="#4a2a17"/>
+          </linearGradient>
+          <clipPath id="glassInner">
+            <path d="M120 95h160l-20 317q-1 8-11 8h-98q-10 0-11-8Z"/>
+          </clipPath>
+        </defs>
+
+        <rect width="400" height="620" fill="#03152d"/>
+        <rect class="scene-glow" width="400" height="620" fill="url(#heroGlow)"/>
+        <ellipse class="scene-glow" cx="200" cy="424" rx="122" ry="30" fill="url(#baseShine)"/>
+
+        <path class="pour-stream" d="M193 0h14l6 100h-26Z" fill="url(#streamFill)"/>
+
+        <g class="scene-glass">
+          <g clip-path="url(#glassInner)">
+            <rect class="liquid-milk" x="112" y="286" width="176" height="146" fill="url(#milkFill)"/>
+            <rect class="liquid-coffee" x="112" y="140" width="176" height="164" fill="url(#coffeeFill)"/>
+            <ellipse class="crema" cx="200" cy="141" rx="78" ry="12" fill="#c98d52"/>
+
+            <g class="ice ice-1">
+              <rect x="140" y="150" width="58" height="52" rx="11" transform="rotate(-12 169 176)" fill="#fff" fill-opacity=".26" stroke="#fff" stroke-opacity=".42" stroke-width="1.6"/>
+            </g>
+            <g class="ice ice-2">
+              <rect x="200" y="182" width="52" height="48" rx="10" transform="rotate(15 226 206)" fill="#fff" fill-opacity=".22" stroke="#fff" stroke-opacity=".38" stroke-width="1.6"/>
+            </g>
+            <g class="ice ice-3">
+              <rect x="148" y="228" width="60" height="54" rx="11" transform="rotate(7 178 255)" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".34" stroke-width="1.6"/>
+            </g>
+            <g class="ice ice-4">
+              <rect x="204" y="270" width="48" height="44" rx="10" transform="rotate(-17 228 292)" fill="#fff" fill-opacity=".17" stroke="#fff" stroke-opacity=".3" stroke-width="1.6"/>
+            </g>
+          </g>
+
+          <path d="M120 95h160l-20 317q-1 8-11 8h-98q-10 0-11-8Z" fill="url(#glassBody)" stroke="#fff" stroke-opacity=".5" stroke-width="2.8" stroke-linejoin="round"/>
+          <path d="M120 95h160" stroke="#fff" stroke-opacity=".72" stroke-width="4" stroke-linecap="round"/>
+          <path class="glass-sheen" d="M141 110h15l-11 290h-14Z" fill="#fff" fill-opacity=".12"/>
+
+          <g class="drops" fill="#fff" fill-opacity=".5">
+            <ellipse cx="272" cy="165" rx="3.4" ry="4.6"/>
+            <ellipse cx="130" cy="202" rx="2.6" ry="3.6"/>
+            <ellipse cx="267" cy="246" rx="2.8" ry="3.8"/>
+            <ellipse cx="135" cy="288" rx="3.4" ry="4.6"/>
+            <ellipse cx="262" cy="318" rx="2.4" ry="3.2"/>
+          </g>
+        </g>
+      </svg>
       <div class="hero-shade"></div>
 
       <div class="hero-copy">
@@ -93,10 +166,10 @@
           <span id="pickupBanner">Fresh Saturday pickup</span>
         </div>
 
-        <p class="eyebrow">Veteran owned • Henderson, NC</p>
+        <p class="eyebrow">Handmade • Veteran owned • Henderson, NC</p>
         <h1>Stock the fridge.<br>Save $6.</h1>
         <p class="hero-sub">
-          Build any six flavors for $30 — just $5 per bottle and our best overall value.
+          Handmade one bottle at a time. Build any six flavors for $30 — just $5 a bottle.
         </p>
 
         <div class="hero-actions">
@@ -279,13 +352,13 @@
         <img src="/images/brand-card.jpg" alt="Rally Point Refreshments branding" loading="lazy">
         <div>
           <p class="eyebrow dark">Why Rally Point?</p>
-          <h2>Made locally. Ordered simply.</h2>
+          <h2>Made by hand. Ordered simply.</h2>
           <p>
-            Rally Point Refreshments is a veteran-owned family business serving fresh bottled lattes in Henderson, North Carolina.
+            Rally Point Refreshments is a veteran-owned family business in Henderson, North Carolina. Every latte is made by hand in small batches and bottled fresh for the week — never mass produced.
           </p>
 
           <div class="trust-points">
-            <span>✓ Fresh weekly</span>
+            <span>✓ Handmade in small batches</span>
             <span>✓ Mix-and-match packs</span>
             <span>✓ Instant order confirmation</span>
           </div>
@@ -375,6 +448,18 @@
     </section>
   </div>
 
+  <div class="addon-overlay" id="addonOverlay" aria-hidden="true">
+    <section class="addon-card" role="dialog" aria-modal="true" aria-labelledby="addonTitle">
+      <p class="eyebrow dark">Add to your order</p>
+      <h2 id="addonTitle">Add a bottle for $5</h2>
+      <p class="addon-sub">Pick any flavor to add to this pack.</p>
+
+      <div class="addon-grid" id="addonGrid"></div>
+
+      <button class="addon-skip" id="addonSkip" type="button">No thanks</button>
+    </section>
+  </div>
+
   <div class="confirmation-overlay" id="confirmationOverlay" aria-hidden="true">
     <section class="confirmation-card" role="dialog" aria-modal="true" aria-labelledby="confirmationTitle">
       <div class="confirmation-check">✓</div>
@@ -402,6 +487,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="/app.js?v=7"></script>
+  <script src="/app.js?v=8"></script>
 </body>
 </html>

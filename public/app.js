@@ -239,7 +239,10 @@ document.addEventListener("click", event => {
   if (!button) return;
 
   const product = products[Number(button.dataset.productIndex)];
-  const existing = cart.find(item => item.type === "single" && item.name === product.name);
+  // Never merge into a $5 pack add-on; it is priced differently.
+  const existing = cart.find(item =>
+    item.type === "single" && item.name === product.name && !item.bonus
+  );
 
   if (existing) {
     existing.qty += 1;
@@ -350,6 +353,7 @@ document.querySelectorAll(".pack-card").forEach(card => {
     updatePack();
     save();
     toast(`${size}-pack added`);
+    openAddon(size);
   });
 
   updatePack();
@@ -401,7 +405,7 @@ function renderCart() {
     <div class="cart-item">
       <div>
         <h4>${item.type === "single" ? `${item.qty}× ${item.name}` : `Custom ${item.size}-Pack`}</h4>
-        <p>${item.type === "pack" ? summarizePack(item.flavors) : money(item.price)}</p>
+        <p>${item.type === "pack" ? summarizePack(item.flavors) : money(item.price)}${item.bonus ? " • pack add-on" : ""}</p>
       </div>
       <button class="remove" type="button" data-remove="${index}">Remove</button>
     </div>
@@ -435,6 +439,64 @@ document.getElementById("closeCart").addEventListener("click", closeCart);
 
 overlay.addEventListener("click", event => {
   if (event.target === overlay) closeCart();
+});
+
+// ---- Pack add-on: one discounted bottle per pack, offered right after a pack
+// is added. The price depends on the pack, and must match the Worker's table.
+const ADDON_PRICE_BY_PACK = {3: 5, 6: 4};
+const addonOverlay = document.getElementById("addonOverlay");
+
+function closeAddon() {
+  addonOverlay.classList.remove("open");
+  addonOverlay.setAttribute("aria-hidden", "true");
+  if (!overlay.classList.contains("open")) document.body.style.overflow = "";
+}
+
+function openAddon(packSize) {
+  const price = ADDON_PRICE_BY_PACK[packSize];
+  if (!price) return;
+
+  const grid = document.getElementById("addonGrid");
+  document.getElementById("addonTitle").textContent = `Add a bottle for $${price}`;
+
+  grid.innerHTML = products.map((product, index) => `
+    <button class="addon-option" type="button" data-addon-index="${index}">
+      <span>${product.name}</span>
+      <b>$${price}</b>
+    </button>
+  `).join("");
+
+  grid.querySelectorAll("[data-addon-index]").forEach(button => {
+    button.addEventListener("click", () => {
+      const product = products[Number(button.dataset.addonIndex)];
+      cart.push({
+        type: "single",
+        name: product.name,
+        qty: 1,
+        price,
+        bonus: packSize
+      });
+      save();
+      closeAddon();
+      toast(`${product.name} added for $${price}`);
+    });
+  });
+
+  addonOverlay.classList.add("open");
+  addonOverlay.setAttribute("aria-hidden", "false");
+  document.body.style.overflow = "hidden";
+  document.getElementById("addonSkip").focus();
+}
+
+document.getElementById("addonSkip").addEventListener("click", closeAddon);
+addonOverlay.addEventListener("click", event => {
+  if (event.target === addonOverlay) closeAddon();
+});
+
+document.addEventListener("keydown", event => {
+  if (event.key !== "Escape") return;
+  if (addonOverlay.classList.contains("open")) closeAddon();
+  else if (overlay.classList.contains("open")) closeCart();
 });
 
 function toast(message) {
@@ -538,7 +600,8 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
           name: item.name,
           qty: item.qty,
           size: item.size,
-          flavors: item.flavors
+          flavors: item.flavors,
+          bonus: item.bonus
         }))
       })
     });
@@ -582,7 +645,7 @@ document.getElementById("checkoutForm").addEventListener("submit", async event =
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/service-worker.js?v=7").catch(() => {});
+    navigator.serviceWorker.register("/service-worker.js?v=8").catch(() => {});
   });
 }
 

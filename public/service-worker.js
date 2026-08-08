@@ -1,11 +1,10 @@
-const CACHE_NAME = "rally-point-v7";
+const CACHE_NAME = "rally-point-v8";
 const ASSETS = [
   "/",
   "/index.html",
-  "/style.css?v=7",
-  "/app.js?v=7",
-  "/manifest.json?v=7",
-  "/images/bottles.jpg",
+  "/style.css?v=8",
+  "/app.js?v=8",
+  "/manifest.json?v=8",
   "/images/brand-card.jpg",
   "/images/icon-192.png",
   "/images/icon-512.png",

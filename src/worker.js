@@ -8,6 +8,9 @@ const CATALOG = new Map([
   ["White Chocolate Mocha Latte", 600]
 ]);
 
+// Each pack unlocks one discounted add-on bottle, priced by the pack it came with.
+const BONUS_PRICE_BY_PACK = new Map([[3, 500], [6, 400]]);
+
 const DEFAULT_PICKUP_WINDOW = "Details confirmed by text";
 const ALLOWED_WINDOWS = new Set(["Morning", "Afternoon", "Evening", DEFAULT_PICKUP_WINDOW]);
 const ALLOWED_STATUSES = new Set(["new", "confirmed", "preparing", "ready", "picked_up", "cancelled"]);
@@ -266,7 +269,10 @@ function validateItems(items) {
 
   let subtotal = 0;
   let bottleCount = 0;
+  const packByTier = new Map();
+  const bonusByTier = new Map();
   const normalized = [];
+  const tally = (map, key) => map.set(key, (map.get(key) || 0) + 1);
 
   for (const item of items) {
     if (!item || typeof item !== "object") return {ok: false, error: "An order item is invalid."};
@@ -274,14 +280,22 @@ function validateItems(items) {
     if (item.type === "single") {
       const name = clean(item.name, 100);
       const qty = Number(item.qty);
+      // item.bonus carries the size of the pack that unlocked it; anything
+      // unrecognised simply falls through and is charged at full price.
+      const bonusTier = Number(item.bonus);
+      const isBonus = BONUS_PRICE_BY_PACK.has(bonusTier);
 
       if (!CATALOG.has(name) || !Number.isInteger(qty) || qty < 1 || qty > 24) {
         return {ok: false, error: "A single-bottle item is invalid."};
       }
+      if (isBonus && qty !== 1) {
+        return {ok: false, error: "A pack add-on bottle is invalid."};
+      }
 
-      subtotal += CATALOG.get(name) * qty;
+      subtotal += (isBonus ? BONUS_PRICE_BY_PACK.get(bonusTier) : CATALOG.get(name)) * qty;
       bottleCount += qty;
-      normalized.push({type: "single", name, qty});
+      if (isBonus) tally(bonusByTier, bonusTier);
+      normalized.push(isBonus ? {type: "single", name, qty, bonus: bonusTier} : {type: "single", name, qty});
       continue;
     }
 
@@ -295,11 +309,20 @@ function validateItems(items) {
 
       subtotal += size === 3 ? 1700 : 3000;
       bottleCount += size;
+      tally(packByTier, size);
       normalized.push({type: "pack", size, flavors});
       continue;
     }
 
     return {ok: false, error: "An order item type is invalid."};
+  }
+
+  // One discounted bottle per matching pack, checked after the loop so item
+  // order does not matter and a 6-pack price cannot be claimed off a 3-pack.
+  for (const [tier, count] of bonusByTier) {
+    if (count > (packByTier.get(tier) || 0)) {
+      return {ok: false, error: "A discounted bottle requires a matching pack."};
+    }
   }
 
   if (bottleCount > 48) return {ok: false, error: "Please contact us for orders over 48 bottles."};
@@ -442,14 +465,26 @@ async function sendOrderEmails(env, order) {
     ? `${order.pickupDate} — exact details confirmed by text`
     : `${order.pickupDate} — ${order.pickupWindow}`;
 
+  const addonLabel = item => {
+    const cents = BONUS_PRICE_BY_PACK.get(Number(item.bonus));
+    return cents ? `pack add-on · $${(cents / 100).toFixed(2).replace(".00", "")}` : "";
+  };
+
   const itemText = order.items.map(item => {
-    if (item.type === "single") return `${item.qty}x ${item.name}`;
+    if (item.type === "single") {
+      const label = addonLabel(item);
+      return `${item.qty}x ${item.name}${label ? ` (${label})` : ""}`;
+    }
     return `${item.size}-Pack:\n${item.flavors.map(flavor => `- ${flavor}`).join("\n")}`;
   }).join("\n\n");
 
   const itemHtml = order.items.map(item => {
     if (item.type === "single") {
-      return `<li style="margin:0 0 8px"><strong>${item.qty}×</strong> ${escapeHtml(item.name)}</li>`;
+      const label = addonLabel(item);
+      const tag = label
+        ? ` <span style="color:#17734c;font-size:12px;font-weight:700">${escapeHtml(label)}</span>`
+        : "";
+      return `<li style="margin:0 0 8px"><strong>${item.qty}×</strong> ${escapeHtml(item.name)}${tag}</li>`;
     }
 
     const flavorCounts = item.flavors.reduce((result, flavor) => {
