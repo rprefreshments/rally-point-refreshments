@@ -73,6 +73,31 @@ export default {
         return withPaymentSecurityHeaders(response);
       }
 
+      // Customers remove themselves; no auth, so it stays usable from a text.
+      if (url.pathname === "/api/coffee-club/optout" && request.method === "POST") {
+        if (isRateLimited(request, "optout", 20)) {
+          return json({ok: false, error: "Too many attempts. Please try again shortly."}, 429);
+        }
+        return await addOptOut(request, env, "customer");
+      }
+
+      // Putting someone back on the list is an owner action only.
+      if (url.pathname === "/api/coffee-club/optout" && request.method === "DELETE") {
+        const auth = requireAdmin(request, env);
+        if (auth) return auth;
+        return await removeOptOut(request, env);
+      }
+
+      if (url.pathname === "/api/coffee-club/remove" && request.method === "POST") {
+        const auth = requireAdmin(request, env);
+        if (auth) return auth;
+        return await addOptOut(request, env, "owner");
+      }
+
+      if (url.pathname === "/unsubscribe" || url.pathname === "/unsubscribe/" || url.pathname === "/unsubscribe.html") {
+        return env.ASSETS.fetch(new URL("/unsubscribe.html", url.origin));
+      }
+
       return env.ASSETS.fetch(request);
     } catch (error) {
       console.error("Unhandled worker error", error);
@@ -145,7 +170,55 @@ async function ensureDatabase(env) {
     }
   }
 
+  // Coffee Club opt-outs live in their own table rather than clearing the flag
+  // on past orders: order rows are a record of what was consented to at the
+  // time, and a suppression list keeps someone off the list even if they
+  // order again later.
+  await env.DB.prepare(`
+    CREATE TABLE IF NOT EXISTS coffee_club_optouts (
+      phone_digits TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL,
+      source TEXT NOT NULL DEFAULT 'customer'
+    )
+  `).run();
+
   schemaReady = true;
+}
+
+const phoneDigitsOf = value => String(value ?? "").replace(/\D/g, "");
+
+async function listOptOutDigits(env) {
+  const result = await env.DB.prepare(`SELECT phone_digits FROM coffee_club_optouts`).all();
+  return (result.results || []).map(row => row.phone_digits);
+}
+
+async function addOptOut(request, env, source) {
+  const body = await request.json().catch(() => null);
+  const digits = phoneDigitsOf(body?.phone);
+
+  if (digits.length < 10 || digits.length > 15) {
+    return json({ok: false, error: "Enter the phone number you signed up with."}, 400);
+  }
+
+  await ensureDatabase(env);
+  await env.DB.prepare(`
+    INSERT INTO coffee_club_optouts (phone_digits, created_at, source)
+    VALUES (?, ?, ?)
+    ON CONFLICT(phone_digits) DO UPDATE SET created_at = excluded.created_at
+  `).bind(digits, new Date().toISOString(), source).run();
+
+  return json({ok: true, phoneDigits: digits});
+}
+
+async function removeOptOut(request, env) {
+  const body = await request.json().catch(() => null);
+  const digits = phoneDigitsOf(body?.phone);
+
+  if (!digits) return json({ok: false, error: "A phone number is required."}, 400);
+
+  await ensureDatabase(env);
+  await env.DB.prepare(`DELETE FROM coffee_club_optouts WHERE phone_digits = ?`).bind(digits).run();
+  return json({ok: true});
 }
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -398,7 +471,7 @@ async function listOrders(url, env) {
     items: safeParseItems(row.items_json)
   }));
 
-  return json({ok: true, orders});
+  return json({ok: true, orders, coffeeClubOptOuts: await listOptOutDigits(env)});
 }
 
 async function updateOrder(request, env, id) {
@@ -848,7 +921,7 @@ async function sendOrderEmails(env, order) {
       "",
       "Pickup is at 10 AM in Henderson. We will text the exact address and instructions after checkout.",
       order.deliveryInterest ? "You asked about local delivery. Your order remains pickup unless Rally Point confirms delivery and any fee by text." : "",
-      order.coffeeClubOptIn ? "You opted in to the weekly Saturday Coffee Club ordering reminder by text. Reply STOP to opt out." : "",
+      order.coffeeClubOptIn ? `You opted in to the weekly Saturday Coffee Club ordering reminder by text. To stop them, reply STOP or visit ${siteUrl.replace(/\/$/, "")}/unsubscribe` : "",
       `Questions? Text us at (252) 226-0557.`
     ].filter(Boolean).join("\n");
 
@@ -882,7 +955,9 @@ async function sendOrderEmails(env, order) {
 
       ${order.coffeeClubOptIn ? `
         <p style="margin:18px 0 0;color:#4b5563">
-          You’re on the Saturday Coffee Club reminder list. We’ll text when weekly ordering opens. Reply STOP to opt out.
+          You’re on the Saturday Coffee Club reminder list. We’ll text when weekly ordering opens.
+          To stop them, reply STOP to the text or
+          <a href="${siteUrl.replace(/\/$/, "")}/unsubscribe" style="color:#c8212c;font-weight:800">remove yourself here</a>.
         </p>
       ` : ""}
 

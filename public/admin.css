@@ -292,6 +292,27 @@ main{max-width:1180px;margin:auto;padding:22px 15px 60px}
   font-weight:850;
   text-decoration:none;
 }
+.reminder-member span{flex:1;min-width:0}
+.reminder-remove,.reminder-restore{
+  min-height:40px;
+  padding:8px 12px;
+  border-radius:10px;
+  font:inherit;
+  font-size:12px;
+  font-weight:850;
+  cursor:pointer;
+}
+.reminder-remove{border:1px solid #e5d8bc;background:#fff;color:#06182f}
+.reminder-remove:hover{border-color:#b31c27;background:#fdeaea;color:#a3121c}
+.reminder-restore{border:1px solid #cbd5e1;background:#fff;color:#175b8b}
+.reminder-restore:hover{background:#e7f4ff}
+.reminder-remove:disabled,.reminder-restore:disabled{opacity:.55;cursor:default}
+.reminder-member.opted-out{background:#faf7f2;border-style:dashed}
+.opted-out-wrap{margin-top:16px;border-top:1px solid #e5d8bc;padding-top:12px}
+.opted-out-wrap summary{
+  color:#06182f;font-size:13px;font-weight:850;cursor:pointer;list-style:revert
+}
+.opted-out-note{margin:8px 0 0;color:#667085;font-size:12px}
 .reminder-empty{color:#667085;font-size:13px}
 .preference-badges{display:flex;flex-wrap:wrap;gap:7px;margin:9px 0 2px}
 .preference{

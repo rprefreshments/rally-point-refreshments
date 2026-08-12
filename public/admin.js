@@ -17,6 +17,8 @@ const escapeHtml = value => String(value ?? "")
 const ordersWrap = document.getElementById("orders");
 const template = document.getElementById("orderTemplate");
 let orders = [];
+// Phone digits suppressed from the Coffee Club reminder list.
+const optedOut = new Set();
 const selectedIds = new Set();
 let autoRefreshTimer = null;
 let selectedPickupDate = "";
@@ -241,28 +243,106 @@ function renderReminders() {
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .forEach(order => {
       const digits = order.customer_phone.replace(/\D/g, "");
-      if (digits && !membersByPhone.has(digits)) membersByPhone.set(digits, order);
+      // Anyone who opted out stays off the list even if they order again.
+      if (digits && !optedOut.has(digits) && !membersByPhone.has(digits)) {
+        membersByPhone.set(digits, order);
+      }
     });
 
   const members = [...membersByPhone.entries()];
-  document.getElementById("reminderCount").textContent = `${members.length} opted in`;
+  const removedNote = optedOut.size ? ` · ${optedOut.size} opted out` : "";
+  document.getElementById("reminderCount").textContent = `${members.length} opted in${removedNote}`;
+
   const list = document.getElementById("reminderList");
   if (!members.length) {
     list.innerHTML = '<span class="reminder-empty">No Coffee Club members yet.</span>';
+  } else {
+    list.innerHTML = members.map(([digits, member]) => {
+      const firstName = member.customer_name.trim().split(/\s+/)[0] || "there";
+      const message = `Hi ${firstName}! Saturday Coffee Club ordering is open. Reorder your usual or build this week’s pack at https://rallypointrefreshments.com — Rally Point Refreshments. Reply STOP or use https://rallypointrefreshments.com/unsubscribe to stop these.`;
+      return `
+        <div class="reminder-member">
+          <span><strong>${escapeHtml(member.customer_name)}</strong><small>${escapeHtml(member.customer_phone)}</small></span>
+          <a href="sms:${digits}?body=${encodeURIComponent(message)}">Open reminder text</a>
+          <button class="reminder-remove" type="button" data-remove-phone="${digits}"
+                  data-remove-name="${escapeHtml(member.customer_name)}">Remove</button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  renderOptedOut();
+}
+
+function renderOptedOut() {
+  const wrap = document.getElementById("optedOutList");
+  if (!wrap) return;
+
+  if (!optedOut.size) {
+    wrap.innerHTML = '<span class="reminder-empty">Nobody has opted out.</span>';
     return;
   }
 
-  list.innerHTML = members.map(([digits, member]) => {
-    const firstName = member.customer_name.trim().split(/\s+/)[0] || "there";
-    const message = `Hi ${firstName}! Saturday Coffee Club ordering is open. Reorder your usual or build this week’s pack at https://rallypointrefreshments.com — Rally Point Refreshments. Reply STOP to opt out.`;
+  wrap.innerHTML = [...optedOut].map(digits => {
+    const match = orders.find(order => order.customer_phone.replace(/\D/g, "") === digits);
+    const label = match ? match.customer_name : digits;
     return `
-      <div class="reminder-member">
-        <span><strong>${escapeHtml(member.customer_name)}</strong><small>${escapeHtml(member.customer_phone)}</small></span>
-        <a href="sms:${digits}?body=${encodeURIComponent(message)}">Open reminder text</a>
+      <div class="reminder-member opted-out">
+        <span><strong>${escapeHtml(label)}</strong><small>${escapeHtml(formatPhone(digits))}</small></span>
+        <button class="reminder-restore" type="button" data-restore-phone="${digits}">Put back</button>
       </div>
     `;
   }).join("");
 }
+
+function formatPhone(digits) {
+  const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  return local.length === 10
+    ? `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`
+    : digits;
+}
+
+async function coffeeClubRequest(path, method, phone) {
+  const response = await fetch(path, {
+    method,
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({phone})
+  });
+  if (!response.ok) throw new Error("That change could not be saved.");
+}
+
+document.addEventListener("click", async event => {
+  const removeButton = event.target.closest("[data-remove-phone]");
+  if (removeButton) {
+    const {removePhone, removeName} = removeButton.dataset;
+    if (!confirm(`Remove ${removeName} from the Coffee Club reminder list?`)) return;
+
+    removeButton.disabled = true;
+    try {
+      await coffeeClubRequest("/api/coffee-club/remove", "POST", removePhone);
+      optedOut.add(removePhone);
+      renderReminders();
+    } catch (error) {
+      removeButton.disabled = false;
+      alert(error.message);
+    }
+    return;
+  }
+
+  const restoreButton = event.target.closest("[data-restore-phone]");
+  if (restoreButton) {
+    const phone = restoreButton.dataset.restorePhone;
+    restoreButton.disabled = true;
+    try {
+      await coffeeClubRequest("/api/coffee-club/optout", "DELETE", phone);
+      optedOut.delete(phone);
+      renderReminders();
+    } catch (error) {
+      restoreButton.disabled = false;
+      alert(error.message);
+    }
+  }
+});
 
 function summarizeItems(items) {
   return items.map(item => {
@@ -567,6 +647,8 @@ async function loadOrders(showLoading = true) {
     if (!response.ok) throw new Error("Could not load orders");
     const data = await response.json();
     orders = data.orders || [];
+    optedOut.clear();
+    (data.coffeeClubOptOuts || []).forEach(digits => optedOut.add(digits));
     renderWeekOptions();
     renderStats();
     renderReminders();
