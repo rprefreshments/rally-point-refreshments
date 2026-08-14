@@ -112,9 +112,12 @@ function renderWeekOptions() {
 }
 
 function getProductionSummary() {
-  const productionOrders = getWeekOrders().filter(order =>
-    order.payment_status === "COMPLETED" && order.status !== "cancelled"
-  );
+  const paidOrders = getWeekOrders().filter(order => order.payment_status === "COMPLETED");
+  // Picked-up orders are already made and handed over, and cancelled ones never
+  // get made at all, so neither belongs in "what to make". Orders sitting at
+  // "ready" stay counted — they are bottled and waiting, not gone.
+  const productionOrders = paidOrders.filter(order => !isDone(order));
+  const pickedUp = paidOrders.filter(order => order.status === "picked_up").length;
   const flavors = new Map();
   let sixPacks = 0;
   let threePacks = 0;
@@ -145,14 +148,15 @@ function getProductionSummary() {
   });
 
   const totalBottles = [...flavors.values()].reduce((sum, count) => sum + count, 0);
-  return {productionOrders, flavors, sixPacks, threePacks, singles, addOns, totalBottles};
+  return {productionOrders, pickedUp, flavors, sixPacks, threePacks, singles, addOns, totalBottles};
 }
 
 function renderProduction() {
   const summary = getProductionSummary();
   const weekLabel = selectedPickupDate === "all" ? "All pickup dates" : formatPickupDay(selectedPickupDate);
-  document.getElementById("productionMeta").textContent =
-    `${weekLabel} · ${summary.productionOrders.length} paid, non-cancelled order${summary.productionOrders.length === 1 ? "" : "s"}`;
+  const toMake = `${summary.totalBottles} bottle${summary.totalBottles === 1 ? "" : "s"} to make`;
+  const alreadyDone = summary.pickedUp ? ` · ${summary.pickedUp} already picked up` : "";
+  document.getElementById("productionMeta").textContent = `${weekLabel} · ${toMake}${alreadyDone}`;
 
   const totalCards = [
     [summary.totalBottles, "Total bottles"],
